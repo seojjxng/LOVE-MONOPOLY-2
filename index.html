@@ -203,10 +203,14 @@
     });
 }
     mapa.forEach((m, i) => { 
-        const d = document.createElement('div'); 
-        d.className = 'cell'; d.id = 'cell-' + i;
-        d.onclick = () => verPropiedad(i);
-        d.innerHTML = `${m.p > 0 ? '<div class="strip" style="background:'+grupos[m.g].color+'"></div>' : ''}${m.n}<br>${m.p > 0 ? '$'+m.p : ''}`; 
-        document.getElementById('board').appendChild(d); 
+    const d = document.createElement('div'); 
+    d.className = 'cell'; d.id = 'cell-' + i;
+    d.onclick = () => verPropiedad(i);
+    
+    // Verificamos si existe m.g y si el grupo existe en el objeto grupos
+    let color = (m.g && grupos[m.g]) ? grupos[m.g].color : 'transparent';
+    let strip = (m.p > 0) ? `<div class="strip" style="background:${color}"></div>` : '';
+        d.innerHTML = `${strip}${m.n}<br>${m.p > 0 ? '$'+m.p : ''}`; 
+    document.getElementById('board').appendChild(d);
     });
 </script></body></html>
