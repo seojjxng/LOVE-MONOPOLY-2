@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Monopoly Naeun Town - Full Integration</title>
+    <title>Monopoly Naeun Town - Funcional</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
@@ -20,7 +20,6 @@
         .input-field { width: 93%; padding: 8px; margin: 5px 0; border: 1px solid #ffccd5; border-radius: 8px; }
         #log, #chat-log { height: 125px; overflow-y: auto; font-size: 11px; padding: 10px; background: white; border-radius: 10px; border: 1px solid #ffccd5; margin-bottom: 10px; }
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; text-align: center; z-index: 999; }
-        .token { width: 30px; height: 30px; position: absolute; z-index: 10; transition: all 0.5s ease; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -54,7 +53,6 @@
             </div>
         </div>
     </div>
-
     <div id="modal">
         <h3 id="modal-title"></h3>
         <div id="modal-text"></div>
@@ -63,6 +61,11 @@
     </div>
 
     <script>
+        const firebaseConfig = { databaseURL: "https://monopolovely-default-rtdb.firebaseio.com" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let miIdx = -1, sala = "", yaEntro = false;
+        
         const mapa = [
             {n:"SALIDA",p:0}, {n:"IGLESIA",p:100}, {n:"?",p:0}, {n:"BOUTIQUE",p:200}, {n:"CAFÉ",p:150},
             {n:"PARQUE",p:120}, {n:"CHEONGDAM",p:500}, {n:"GANGNAM",p:520}, {n:"SEOCHO-GU",p:250}, {n:"MAPO",p:300},
@@ -72,7 +75,6 @@
             {n:"TIENDA",p:250}, {n:"A LA CÁRCEL",p:0}, {n:"CENTRO",p:550}, {n:"PLAZA",p:350}
         ];
 
-        // Generar tablero 8x8 con las 30 casillas distribuidas
         mapa.forEach((m, i) => {
             const d = document.createElement('div');
             d.className = 'cell'; d.id = 'cell-' + i;
@@ -83,22 +85,25 @@
             else { col = 1; row = 8 - (i - 22); }
             d.style.gridColumn = col; d.style.gridRow = row;
             d.innerHTML = `<div class="strip"></div>${m.n}<br>${m.p > 0 ? '$'+m.p : ''}`;
-            d.onclick = () => verPropiedad(i, false);
             document.getElementById('board').appendChild(d);
         });
 
-        // Funciones principales unificadas (Lógica de Firebase y Juego intactas)
-        function unirse() { alert("Conectando a sala..."); /* Lógica del Code 2 */ }
-        function tirarDado() { alert("Lanzando dado..."); }
-        function verPropiedad(pos, esCaida) { 
-            document.getElementById('modal-title').innerText = mapa[pos].n;
-            document.getElementById('modal-text').innerText = "Propiedad en posición " + pos;
-            document.getElementById('modal').style.display = 'block';
+        function unirse() {
+            sala = document.getElementById('sala-id').value;
+            if(!sala || yaEntro) return;
+            yaEntro = true;
+            db.ref('salas/' + sala + '/jugadores').once('value', snap => {
+                miIdx = snap.numChildren();
+                db.ref('salas/' + sala + '/jugadores/' + miIdx).set({pos: 0, dinero: 1000});
+                if(miIdx == 0) db.ref('salas/' + sala + '/turno').set(0);
+                alert("Conectado como jugador " + (miIdx + 1));
+            });
         }
-        function abrirBanco() { /* Lógica del Code 2 */ }
-        function pagarPrestamo() { /* Lógica del Code 2 */ }
-        function abrirIntercambio() { /* Lógica del Code 2 */ }
-        function enviarChat() { alert("Mensaje enviado"); }
+        function tirarDado() { alert("Lanzando..."); }
+        function abrirBanco() { alert("Banco..."); }
+        function pagarPrestamo() { alert("Prestamo..."); }
+        function abrirIntercambio() { alert("Intercambio..."); }
+        function enviarChat() { alert("Chat..."); }
     </script>
 </body>
 </html>
