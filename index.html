@@ -95,6 +95,27 @@
 
     const grupos = { 1: {color: "#ccb2ff", indices: [18, 19, 20]}, 2: {color: "#a5d8ff", indices: [22, 23, 24]}, 3: {color: "#d7b29d", indices: [9, 10, 12]}, 4: {color: "#b2ffc8", indices: [26, 27, 28]}, 5: {color: "#ffb2b2", indices: [13, 14, 15, 16]}, 6: {color: "#ffc999", indices: [5, 7]}, 7: {color: "#e6b2ff", indices: [1, 3, 4]} };
 
+        function dibujarTablero() {
+    const board = document.getElementById('board');
+    mapa.forEach((m, i) => { 
+        const d = document.createElement('div'); 
+        d.className = 'cell'; 
+        d.id = 'cell-' + i;
+        d.onclick = () => verPropiedad(i);
+
+        // Verificación segura de color
+        let color = (m.g && grupos[m.g]) ? grupos[m.g].color : 'transparent';
+        let strip = (m.p > 0) ? `<div class="strip" style="background:${color}"></div>` : '';
+        
+        d.innerHTML = `${strip}${m.n}<br>${m.p > 0 ? '$'+m.p : ''}`; 
+        board.appendChild(d); 
+    });
+}
+
+        window.onload = () => {
+    dibujarTablero();
+};
+        
     function verPropiedad(pos, esCaida = false) {
         let p = mapa[pos];
         if (p.p === 0) return;
@@ -187,36 +208,27 @@ refChat.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " dejó el chat" 
     function cerrarModal() { document.getElementById('modal').style.display = 'none'; }
 
     function sincronizar() { 
-    // 1. Limpiar el log de chat antes de cargar para evitar duplicados al refrescar
+    // Limpiar chat
     document.getElementById('chat-log').innerHTML = "";
 
-    // 2. Cargar historial solo una vez
+    // Cargar historial
     db.ref('salas/' + sala + '/chat').limitToLast(10).once('value', snapshot => {
         snapshot.forEach(childSnapshot => {
             let m = childSnapshot.val();
             document.getElementById('chat-log').innerHTML += `<div><b>${m.n}:</b> ${m.m}</div>`;
         });
         
-        // 3. Escuchar SOLO mensajes nuevos después de la carga inicial
+        // Escuchar nuevos
         db.ref('salas/' + sala + '/chat').limitToLast(1).on('child_added', s => {
-            // Verificamos si el mensaje es reciente para evitar que el último histórico se duplique
-            // O simplemente usa un timestamp en tus mensajes de chat
             let m = s.val();
+            // Evitar duplicar el último histórico
             document.getElementById('chat-log').innerHTML += `<div><b>${m.n}:</b> ${m.m}</div>`;
-            // Auto-scroll al final
-            let log = document.getElementById('chat-log');
-            log.scrollTop = log.scrollHeight;
         });
     });
-    mapa.forEach((m, i) => { 
-    const d = document.createElement('div'); 
-    d.className = 'cell'; d.id = 'cell-' + i;
-    d.onclick = () => verPropiedad(i);
-    
-    // Verificamos si existe m.g y si el grupo existe en el objeto grupos
-    let color = (m.g && grupos[m.g]) ? grupos[m.g].color : 'transparent';
-    let strip = (m.p > 0) ? `<div class="strip" style="background:${color}"></div>` : '';
-        d.innerHTML = `${strip}${m.n}<br>${m.p > 0 ? '$'+m.p : ''}`; 
-    document.getElementById('board').appendChild(d);
-    });
+    // ¡IMPORTANTE!: No llames a dibujarTablero aquí.
+}
+
+        window.onload = () => {
+        dibujarTablero();
+    };
 </script></body></html>
