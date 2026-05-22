@@ -10,7 +10,27 @@
         .container { display: flex; gap: 25px; width: 1200px; }
         .game-column { display: flex; flex-direction: column; gap: 15px; }
         /* Tablero ampliado */
-        .board { display: grid; grid-template-columns: repeat(8, 80px); grid-template-rows: repeat(8, 80px); gap: 5px; background: #ffccd5; padding: 10px; border-radius: 25px; position: relative; }
+        .board { 
+    display: grid; 
+    grid-template-columns: repeat(8, 80px); 
+    grid-template-rows: repeat(8, 80px); 
+    gap: 5px; 
+    background: #ffccd5; 
+    padding: 10px; 
+    border-radius: 25px; 
+    position: relative; 
+}
+
+        .center-zone { 
+    grid-column: 2 / 8; /* Ocupa el centro despejado */
+    grid-row: 2 / 8; 
+    background: #fff5f7; 
+    border: 3px dashed #ff80bf; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+}
         .cell { background: white; border: 2px solid #ffccd5; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; color: #c71585; text-align: center; position: relative; cursor: pointer; }
         .strip { width: 100%; height: 10px; background: #ff80bf; position: absolute; top: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; }
         .house-container { position: absolute; bottom: 2px; display: flex; gap: 1px; }
@@ -77,12 +97,24 @@
 
         // Generación dinámica del tablero
         mapa.forEach((m, i) => {
-            const d = document.createElement('div');
-            d.className = 'cell'; d.id = 'cell-' + i;
-            d.onclick = () => verPropiedad(i);
-            d.innerHTML = `<div class="strip"></div>${m.n}<br>${m.p > 0 ? '$'+m.p : ''}<div class="house-container"></div>`;
-            document.getElementById('board').appendChild(d);
-        });
+    const d = document.createElement('div');
+    d.className = 'cell'; 
+    d.id = 'cell-' + i;
+    d.onclick = () => verPropiedad(i);
+
+            // Lógica para ubicar en el borde (recorriendo el perímetro)
+    let col, row;
+    if (i < 8) { col = i + 1; row = 1; }              // Borde superior
+    else if (i < 15) { col = 8; row = (i - 7) + 1; }  // Borde derecho
+    else if (i < 23) { col = 8 - (i - 14); row = 8; } // Borde inferior
+    else { col = 1; row = 8 - (i - 22); }             // Borde izquierdo
+    
+    d.style.gridColumn = col;
+    d.style.gridRow = row;
+    
+    d.innerHTML = `<div class="strip"></div>${m.n}<br>${m.p > 0 ? '$'+m.p : ''}<div class="house-container"></div>`;
+    document.getElementById('board').appendChild(d);
+});
 
         // Asegúrate de incluir el resto de tus funciones JavaScript aquí tal cual las tenías.
     </script>
