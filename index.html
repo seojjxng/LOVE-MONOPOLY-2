@@ -159,34 +159,54 @@
     function log(txt) { db.ref('salas/' + sala + '/log').push(txt); }
         
     function unirse() {
-        if (yaEntro) return;
-        sala = document.getElementById('sala-id').value;
-        if (!sala) return alert("Introduce el nombre de la sala.");
+    if (yaEntro) return;
+    sala = document.getElementById('sala-id').value;
+    if (!sala) return alert("Introduce el nombre de la sala.");
+    
+    yaEntro = true;
+    const refSala = db.ref('salas/' + sala);
+    refSala.once('value', snap => {
+        let data = snap.val();
+        // Si la sala no existe, inicializamos las propiedades vacías
+        if (!data) {
+            refSala.set({ 
+                jugadores: [], 
+                propiedades: { "init": true }, // Un valor dummy para que no esté vacío
+                clima: 0 
+            });
+        }
         
-        yaEntro = true;
-        const refSala = db.ref('salas/' + sala);
-        refSala.child('jugadores').once('value', snap => {
-            miIdx = snap.numChildren();
-            refSala.child('jugadores/' + miIdx).set({ pos: 0, dinero: 1000 });
-            document.getElementById('btn-unirse').disabled = true;
-            sincronizar();
-        });
-    }
+        refSala.child('jugadores/' + miIdx).set({ pos: 0, dinero: 1000 });
+        document.getElementById('btn-unirse').disabled = true;
+        sincronizar();
+    });
+}
 
     function comprar(pos) { log(nombres[miIdx] + " compró " + mapa[pos].n); db.ref('salas/' + sala + '/propiedades/' + pos).set({owner: miIdx, nivel: 0, hipotecada: false}); db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => Number(d) - Number(mapa[pos].p)); document.getElementById('modal').style.display = 'none'; }
     function mejorar(pos) { log(nombres[miIdx] + " mejoró " + mapa[pos].n); db.ref('salas/' + sala + '/propiedades/' + pos + '/nivel').transaction(n => (Number(n) || 0) + 1); db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => Number(d) - 50); document.getElementById('modal').style.display = 'none'; }
     function cerrarModal() { document.getElementById('modal').style.display = 'none'; }
 
     function sincronizar() { 
-        db.ref('salas/' + sala).on('value', snap => { 
-            let data = snap.val();
-            if(!data || !data.propiedades) return;
+    db.ref('salas/' + sala).on('value', snap => { 
+        let data = snap.val();
+        if(!data) return;
+        
+        // Actualizar dinero del jugador actual
+        if(data.jugadores && data.jugadores[miIdx]) {
+            document.getElementById('dinero-mio').innerText = data.jugadores[miIdx].dinero;
+        }
+
+        // Solo pintar colores si existen propiedades
+        if(data.propiedades) {
             Object.keys(data.propiedades).forEach(pos => {
                 let cell = document.getElementById('cell-' + pos);
-                if(cell) cell.style.backgroundColor = data.propiedades[pos].hipotecada ? "#ccc" : coloresJugadores[data.propiedades[pos].owner];
+                if(cell && data.propiedades[pos].owner !== undefined) {
+                    cell.style.backgroundColor = data.propiedades[pos].hipotecada ? "#ccc" : coloresJugadores[data.propiedades[pos].owner];
+                }
             });
-        });
-    }
+        }
+    });
+}
     mapa.forEach((m, i) => { 
         const d = document.createElement('div'); 
         d.className = 'cell'; d.id = 'cell-' + i;
