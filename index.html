@@ -86,8 +86,14 @@
     const colores = ["#ffb7b2", "#ffd8a8", "#b2f2bb", "#a5d8ff"];
     const mapa = [{n:"SALIDA",p:0},{n:"A",p:100},{n:"?",p:0},{n:"B",p:200},{n:"C",p:250},{n:"D",p:300},{n:"E",p:350},{n:"F",p:400},{n:"CÁRCEL",p:0},{n:"G",p:500},{n:"H",p:520},{n:"I",p:250},{n:"J",p:300},{n:"K",p:350},{n:"L",p:400},{n:"M",p:500},{n:"N",p:550},{n:"O",p:600},{n:"?",p:0},{n:"P",p:700},{n:"Q",p:750},{n:"R",p:800},{n:"ARCA",p:0},{n:"S",p:900},{n:"T",p:950},{n:"IMPUESTOS",p:0},{n:"U",p:1000},{n:"V",p:1200}];
 
-    // Variables de clima
-    const climas = [{n: "Lluvia", mult: 0.5}, {n: "Ventisca", mult: 0.8}, {n: "Nieve Extrema", mult: 0.4}, {n: "Granizado", mult: 0.7}, {n: "Primavera", mult: 1.2}, {n: "Verano", mult: 1.5}];
+    // Variables de clima ampliadas
+    const climas = [
+        {n: "Lluvia Ligera", mult: 1.0}, {n: "Tormenta", mult: 1.0},
+        {n: "Ventisca", mult: 1.0}, {n: "Nevada Suave", mult: 1.0},
+        {n: "Primavera Soleada", mult: 1.0}, {n: "Primavera Lluviosa", mult: 1.0},
+        {n: "Verano Caluroso", mult: 1.0}, {n: "Verano Nublado", mult: 1.0},
+        {n: "Otoño Fresco", mult: 1.0}, {n: "Otoño Ventoso", mult: 1.0}
+    ];
 
     function iniciarRelojClima() {
         setInterval(() => {
@@ -249,7 +255,7 @@
                     let alquilerActual = Math.floor(p.p * porcentajes[prop.nivel || 0] * multClima);
                     htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>
                                  <p>Alquiler actual: <b>$${alquilerActual}</b></p>
-                                 <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios (Clima: ${climas[data.clima].n}):</b></p>
+                                 <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios (Clima: ${data.clima !== undefined ? climas[data.clima].n : '-'}):</b></p>
                                  <ul style="font-size: 10px; padding-left: 15px; margin: 0;">${listaAlquileres}</ul>`;
                     
                     if(esCaida && prop.owner !== miIdx) {
@@ -358,6 +364,14 @@
         db.ref('salas/' + sala).once('value', snap => {
             let s = snap.val(); 
             if(s.turno !== miIdx || s.jugadores[miIdx].enCarcel > 0) return;
+            
+            // Lógica de clima inicial al primer movimiento
+            if (s.clima === undefined) {
+                let climaInicial = Math.floor(Math.random() * 9); // Indices para Primavera, Verano, Otoño
+                db.ref('salas/' + sala + '/clima').set(climaInicial);
+                log("¡El clima inicial es " + climas[climaInicial].n + "!");
+            }
+
             let dado = Math.floor(Math.random()*6)+1;
             document.getElementById('dado-valor').innerText = dado;
             let posActual = Number(s.jugadores[miIdx].pos);
@@ -381,7 +395,7 @@
             let s = snap.val(); if(!s) return; 
             document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
             document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
-            if(s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n + " (x" + c.mult + ")"; }
+            if(s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n; }
             s.jugadores.forEach((j, i) => { 
                 let el = document.getElementById('p' + i); el.style.display = 'block'; 
                 let cell = document.getElementById('cell-' + j.pos); 
