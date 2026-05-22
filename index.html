@@ -47,6 +47,7 @@
             <img src="https://i.imgur.com/u2AtssG.png" id="p2" class="token" style="display:none">
             <img src="https://i.imgur.com/ekQp8WL.png" id="p3" class="token" style="display:none">
             <div class="center-zone">
+                <div id="clima-display" style="font-size: 10px; color: #ff59aa; font-weight: bold;">Clima: -</div>
                 <div id="turno-text" style="font-weight:bold;">ESPERANDO...</div>
                 <div id="dado-valor">0</div>
                 <img src="https://i.imgur.com/Nsafzb4.png" style="width:60px; cursor:pointer" onclick="tirarDado()">
@@ -83,13 +84,21 @@
     let miIdx = -1, sala = "", yaEntro = false;
     const nombres = ["Dog", "Horse", "Hat", "Car"];
     const colores = ["#ffb7b2", "#ffd8a8", "#b2f2bb", "#a5d8ff"];
-    // Mapa actualizado a 29 casillas
     const mapa = [{n:"SALIDA",p:0},{n:"A",p:100},{n:"?",p:0},{n:"B",p:200},{n:"C",p:250},{n:"D",p:300},{n:"E",p:350},{n:"F",p:400},{n:"CÁRCEL",p:0},{n:"G",p:500},{n:"H",p:520},{n:"I",p:250},{n:"J",p:300},{n:"K",p:350},{n:"L",p:400},{n:"M",p:500},{n:"N",p:550},{n:"O",p:600},{n:"?",p:0},{n:"P",p:700},{n:"Q",p:750},{n:"R",p:800},{n:"ARCA",p:0},{n:"S",p:900},{n:"T",p:950},{n:"IMPUESTOS",p:0},{n:"U",p:1000},{n:"V",p:1200}];
 
-    // ... [El resto del script original se mantiene intacto]
+    // Variables de clima
+    const climas = [{n: "Lluvia", mult: 0.5}, {n: "Ventisca", mult: 0.8}, {n: "Nieve Extrema", mult: 0.4}, {n: "Granizado", mult: 0.7}, {n: "Primavera", mult: 1.2}, {n: "Verano", mult: 1.5}];
+
+    function iniciarRelojClima() {
+        setInterval(() => {
+            let nuevoClima = Math.floor(Math.random() * climas.length);
+            db.ref('salas/' + sala + '/clima').set(nuevoClima);
+            log("¡El clima ha cambiado a " + climas[nuevoClima].n + "!");
+        }, 600000);
+    }
+
     let alquilerPendiente = null;
     let turnosSeis = 0;
-
     const cartasEvento = [
         {txt: "¡Inversión exitosa! Cobras $200", v: 200},
         {txt: "¡Olvidaste pagar la factura de luz! Pagas $250 por mora", v: -250},
@@ -106,16 +115,10 @@
         {txt: "¡Heredaste una cuantiosa suma de la tía de una tía! Recibes $150", v: 150}
     ];
 
-    function obtenerCarta() {
-        return cartasEvento[Math.floor(Math.random() * cartasEvento.length)];
-    }
-
-    function cerrarModal() {
-        document.getElementById('modal').style.display = 'none';
-        document.getElementById('modal-extra').innerHTML = "";
-    }
-
+    function obtenerCarta() { return cartasEvento[Math.floor(Math.random() * cartasEvento.length)]; }
+    function cerrarModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('modal-extra').innerHTML = ""; }
     function log(txt) { db.ref('salas/' + sala + '/log').push(txt); }
+    
     function unirse() { 
         if(yaEntro) return;
         sala = document.getElementById('sala-id').value; 
@@ -125,7 +128,7 @@
         db.ref('salas/' + sala + '/jugadores').once('value', snap => { 
             miIdx = snap.numChildren(); 
             db.ref('salas/' + sala + '/jugadores/' + miIdx).set({ pos: 0, dinero: 1000, enCarcel: 0, tienePrestamo: false, montoPrestamo: 0 }); 
-            if(miIdx == 0) db.ref('salas/' + sala + '/turno').set(0); 
+            if(miIdx == 0) { db.ref('salas/' + sala + '/turno').set(0); iniciarRelojClima(); }
             db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: nombres[miIdx] + " ha entrado a la sala." });
             sincronizar(); 
         }); 
@@ -162,7 +165,6 @@
                 });
             }
             document.getElementById('modal-text').innerHTML = html;
-            document.getElementById('modal-extra').innerHTML = "";
             document.getElementById('modal').style.display = 'block';
         });
     }
@@ -210,15 +212,17 @@
         if (p.p === 0) return;
         let extra = document.getElementById('modal-extra'); extra.innerHTML = "";
         
-        db.ref('salas/' + sala + '/propiedades/' + pos).once('value', snap => {
-            let prop = snap.val();
-            document.getElementById('modal-title').innerText = "Tarjeta de Propiedad";
+        db.ref('salas/' + sala).once('value', snap => {
+            let data = snap.val();
+            let prop = data.propiedades ? data.propiedades[pos] : null;
+            let multClima = data.clima !== undefined ? climas[data.clima].mult : 1.0;
             
+            document.getElementById('modal-title').innerText = "Tarjeta de Propiedad";
             let porcentajes = [0.10, 0.15, 0.20, 0.30, 0.40, 0.50];
             let nivelesNombres = ["Base", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
             let listaAlquileres = "";
             porcentajes.forEach((porc, i) => {
-                listaAlquileres += `<li>${nivelesNombres[i]}: $${Math.floor(p.p * porc)}</li>`;
+                listaAlquileres += `<li>${nivelesNombres[i]}: $${Math.floor(p.p * porc * multClima)}</li>`;
             });
 
             let niveles = ["Ninguna", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
@@ -242,10 +246,10 @@
                 if(prop.hipotecada) {
                     htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b> (Hipotecada)</p>`;
                 } else {
-                    let alquilerActual = Math.floor(p.p * porcentajes[prop.nivel || 0]);
+                    let alquilerActual = Math.floor(p.p * porcentajes[prop.nivel || 0] * multClima);
                     htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>
                                  <p>Alquiler actual: <b>$${alquilerActual}</b></p>
-                                 <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios:</b></p>
+                                 <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios (Clima: ${climas[data.clima].n}):</b></p>
                                  <ul style="font-size: 10px; padding-left: 15px; margin: 0;">${listaAlquileres}</ul>`;
                     
                     if(esCaida && prop.owner !== miIdx) {
@@ -263,32 +267,9 @@
         });
     }
 
-    function hipotecar(pos) {
-        db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: true});
-        db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + Math.floor(mapa[pos].p/2));
-        log(nombres[miIdx] + " hipotecó " + mapa[pos].n);
-        document.getElementById('modal').style.display = 'none';
-    }
-
-    function liberar(pos) {
-        db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: false});
-        db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d - Math.floor(mapa[pos].p*0.6));
-        log(nombres[miIdx] + " liberó " + mapa[pos].n);
-        document.getElementById('modal').style.display = 'none';
-    }
-
-    function intentarEvasion(d, a, m) {
-        let exito = Math.random() < 0.30;
-        if(exito) {
-            let montoFinal = Math.floor(m / 2);
-            procesarPago(d, a, montoFinal, true);
-            log(nombres[d] + " evadió el alquiler exitosamente. Pagará $" + montoFinal);
-        } else {
-            let montoFinal = m + 50;
-            procesarPago(d, a, montoFinal, false);
-            log(nombres[d] + " falló su evasión de pago. Paga $" + montoFinal);
-        }
-    }
+    function hipotecar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: true}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + Math.floor(mapa[pos].p/2)); log(nombres[miIdx] + " hipotecó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
+    function liberar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: false}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d - Math.floor(mapa[pos].p*0.6)); log(nombres[miIdx] + " liberó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
+    function intentarEvasion(d, a, m) { let exito = Math.random() < 0.30; if(exito) { let montoFinal = Math.floor(m / 2); procesarPago(d, a, montoFinal, true); log(nombres[d] + " evadió el alquiler exitosamente. Pagará $" + montoFinal); } else { let montoFinal = m + 50; procesarPago(d, a, montoFinal, false); log(nombres[d] + " falló su evasión de pago. Paga $" + montoFinal); } }
 
     function manejarCasilla(pos) {
         let p = mapa[pos];
@@ -320,16 +301,8 @@
         verPropiedad(pos, true);
     }
 
-    function pagarFianza() {
-        db.ref('salas/'+sala+'/jugadores/'+miIdx).update({enCarcel: 0, dinero: firebase.database.ServerValue.increment(-100)});
-        log(nombres[miIdx] + " pagó la fianza.");
-        document.getElementById('modal').style.display = 'none';
-    }
-
-    function quedarseEnCarcel() {
-        log(nombres[miIdx] + " cumplirá su condena en la cárcel.");
-        document.getElementById('modal').style.display = 'none';
-    }
+    function pagarFianza() { db.ref('salas/'+sala+'/jugadores/'+miIdx).update({enCarcel: 0, dinero: firebase.database.ServerValue.increment(-100)}); log(nombres[miIdx] + " pagó la fianza."); document.getElementById('modal').style.display = 'none'; }
+    function quedarseEnCarcel() { log(nombres[miIdx] + " cumplirá su condena en la cárcel."); document.getElementById('modal').style.display = 'none'; }
 
     function pasarTurno() {
         turnosSeis = 0;
@@ -344,9 +317,7 @@
                         log(nombres[nuevoTurno] + " está en la cárcel.");
                         db.ref('salas/'+sala+'/jugadores/'+nuevoTurno).update({ enCarcel: jugador.enCarcel - 1 });
                         db.ref('salas/'+sala+'/turno').set((nuevoTurno + 1) % total);
-                    } else {
-                        db.ref('salas/'+sala+'/turno').set(nuevoTurno);
-                    }
+                    } else { db.ref('salas/'+sala+'/turno').set(nuevoTurno); }
                 });
             });
         });
@@ -371,9 +342,7 @@
             if(!j) return;
             j[d].dinero = Number(j[d].dinero) - m;
             j[a].dinero = Number(j[a].dinero) + m;
-            setTimeout(() => {
-                db.ref('salas/' + sala + '/jugadores/' + d + '/dinero').once('value', s => verificarBancarrota(d, s.val()));
-            }, 500);
+            setTimeout(() => { db.ref('salas/' + sala + '/jugadores/' + d + '/dinero').once('value', s => verificarBancarrota(d, s.val())); }, 500);
             return j;
         });
         if(!esEvasionLog) log(nombres[d] + " pagó $" + m + " a " + nombres[a]);
@@ -393,80 +362,17 @@
             document.getElementById('dado-valor').innerText = dado;
             let posActual = Number(s.jugadores[miIdx].pos);
             let nuevaPos = (posActual + dado) % mapa.length;
-            if (nuevaPos < posActual) {
-                db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + 100);
-                log(nombres[miIdx] + " pasó por SALIDA y cobró $100.");
-            }
+            if (nuevaPos < posActual) { db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + 100); log(nombres[miIdx] + " pasó por SALIDA y cobró $100."); }
             db.ref('salas/' + sala + '/jugadores/' + miIdx + '/pos').set(nuevaPos);
             pasarTurno();
             setTimeout(() => manejarCasilla(nuevaPos), 600);
         }); 
     }
 
-    function abrirBanco() { 
-        const montos = [200, 300, 450, 670, 800, 1000];
-        document.getElementById('modal-title').innerText = "Solicitar Préstamo";
-        let htmlExtra = "";
-        montos.forEach(m => {
-            htmlExtra += `<button class="btn" onclick="pedirPrestamo(${m})">Pedir $${m}</button>`;
-        });
-        document.getElementById('modal-extra').innerHTML = htmlExtra;
-        document.getElementById('modal').style.display = 'block';
-    }
-
-    function pedirPrestamo(m) {
-        db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
-            let jugador = snap.val();
-            if (jugador.tienePrestamo) {
-                alert("Ya tienes un préstamo activo. ¡Págalo primero!");
-                return;
-            }
-            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
-                dinero: firebase.database.ServerValue.increment(m), 
-                tienePrestamo: true, 
-                montoPrestamo: m 
-            });
-            log(nombres[miIdx] + " pidió un préstamo de $" + m);
-            cerrarModal();
-        });
-    }
-
-    function pagarPrestamo() {
-        db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
-            let j = snap.val();
-            if (j.tienePrestamo) {
-                if (j.dinero >= j.montoPrestamo) {
-                    db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
-                        dinero: firebase.database.ServerValue.increment(-j.montoPrestamo),
-                        tienePrestamo: false, 
-                        montoPrestamo: 0 
-                    });
-                    log(nombres[miIdx] + " liquidó su préstamo.");
-                } else {
-                    document.getElementById('modal-title').innerText = "Fondos insuficientes";
-                    document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`;
-                    document.getElementById('modal-extra').innerHTML = "";
-                    document.getElementById('modal').style.display = 'block';
-                }
-            } else {
-                document.getElementById('modal-title').innerText = "Banco";
-                document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`;
-                document.getElementById('modal-extra').innerHTML = "";
-                document.getElementById('modal').style.display = 'block';
-            }
-        });
-    }
-    
-    function verSaldos() { 
-        db.ref('salas/' + sala + '/jugadores').once('value', snap => { 
-            let txt = ""; 
-            snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); 
-            document.getElementById('modal-title').innerText = "Saldos"; 
-            document.getElementById('modal-text').innerHTML = txt; 
-            document.getElementById('modal').style.display = 'block'; 
-        }); 
-    }
-    
+    function abrirBanco() { const montos = [200, 300, 450, 670, 800, 1000]; document.getElementById('modal-title').innerText = "Solicitar Préstamo"; let htmlExtra = ""; montos.forEach(m => { htmlExtra += `<button class="btn" onclick="pedirPrestamo(${m})">Pedir $${m}</button>`; }); document.getElementById('modal-extra').innerHTML = htmlExtra; document.getElementById('modal').style.display = 'block'; }
+    function pedirPrestamo(m) { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let jugador = snap.val(); if (jugador.tienePrestamo) { alert("Ya tienes un préstamo activo. ¡Págalo primero!"); return; } db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(m), tienePrestamo: true, montoPrestamo: m }); log(nombres[miIdx] + " pidió un préstamo de $" + m); cerrarModal(); }); }
+    function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
+    function verSaldos() { db.ref('salas/' + sala + '/jugadores').once('value', snap => { let txt = ""; snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); document.getElementById('modal-title').innerText = "Saldos"; document.getElementById('modal-text').innerHTML = txt; document.getElementById('modal').style.display = 'block'; }); }
     function enviarChat() { let msg = document.getElementById('chat-msg').value; db.ref('salas/' + sala + '/chat').push({ n: nombres[miIdx], m: msg }); document.getElementById('chat-msg').value = ""; }
     
     function sincronizar() { 
@@ -475,6 +381,7 @@
             let s = snap.val(); if(!s) return; 
             document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
             document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
+            if(s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n + " (x" + c.mult + ")"; }
             s.jugadores.forEach((j, i) => { 
                 let el = document.getElementById('p' + i); el.style.display = 'block'; 
                 let cell = document.getElementById('cell-' + j.pos); 
@@ -484,8 +391,7 @@
                 let cell = document.getElementById('cell-' + pos);
                 if(cell) {
                     cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner];
-                    let hc = cell.querySelector('.house-container');
-                    hc.innerHTML = "";
+                    let hc = cell.querySelector('.house-container'); hc.innerHTML = "";
                     let nivel = s.propiedades[pos].nivel || 0;
                     if(nivel > 0 && nivel < 5) { for(let i=0; i<nivel; i++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
                     else if(nivel === 5) { let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); }
