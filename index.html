@@ -187,22 +187,27 @@ refChat.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " dejó el chat" 
     function cerrarModal() { document.getElementById('modal').style.display = 'none'; }
 
     function sincronizar() { 
-    db.ref('salas/' + sala).on('value', snap => { 
-        let data = snap.val();
-        if(!data) return;
-        if(data.jugadores && data.jugadores[miIdx]) { document.getElementById('dinero-mio').innerText = data.jugadores[miIdx].dinero; }
-        if(data.propiedades) {
-            Object.keys(data.propiedades).forEach(pos => {
-                let cell = document.getElementById('cell-' + pos);
-                if(cell && data.propiedades[pos].owner !== undefined) { cell.style.backgroundColor = data.propiedades[pos].hipotecada ? "#ccc" : coloresJugadores[data.propiedades[pos].owner]; }
-            });
-        }
+    // 1. Limpiar el log de chat antes de cargar para evitar duplicados al refrescar
+    document.getElementById('chat-log').innerHTML = "";
+
+    // 2. Cargar historial solo una vez
+    db.ref('salas/' + sala + '/chat').limitToLast(10).once('value', snapshot => {
+        snapshot.forEach(childSnapshot => {
+            let m = childSnapshot.val();
+            document.getElementById('chat-log').innerHTML += `<div><b>${m.n}:</b> ${m.m}</div>`;
+        });
+        
+        // 3. Escuchar SOLO mensajes nuevos después de la carga inicial
+        db.ref('salas/' + sala + '/chat').limitToLast(1).on('child_added', s => {
+            // Verificamos si el mensaje es reciente para evitar que el último histórico se duplique
+            // O simplemente usa un timestamp en tus mensajes de chat
+            let m = s.val();
+            document.getElementById('chat-log').innerHTML += `<div><b>${m.n}:</b> ${m.m}</div>`;
+            // Auto-scroll al final
+            let log = document.getElementById('chat-log');
+            log.scrollTop = log.scrollHeight;
+        });
     });
-    db.ref('salas/' + sala + '/chat').limitToLast(5).on('child_added', s => {
-        let m = s.val();
-        document.getElementById('chat-log').innerHTML += `<div><b>${m.n}:</b> ${m.m}</div>`;
-    });
-}
     mapa.forEach((m, i) => { 
     const d = document.createElement('div'); 
     d.className = 'cell'; d.id = 'cell-' + i;
