@@ -175,7 +175,8 @@
             playerRef.set({ pos: 0, dinero: 1000, enCarcel: 0, tienePrestamo: false, montoPrestamo: 0 });
             playerRef.onDisconnect().remove();
             db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: nombres[miIdx] + " entró al chat" });
-            db.ref('salas/' + sala + '/chat').onDisconnect().push({ n: "Sistema", m: nombres[miIdx] + " dejó el chat" });
+            let refChat = db.ref('salas/' + sala + '/chat').push();
+refChat.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " dejó el chat" });
             sincronizar();
         });
     });
