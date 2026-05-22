@@ -158,28 +158,21 @@
 
     function log(txt) { db.ref('salas/' + sala + '/log').push(txt); }
         
-    function unirse() {
-    if (yaEntro) return;
-    sala = document.getElementById('sala-id').value;
-    if (!sala) return alert("Introduce el nombre de la sala.");
-    
+    function unirse() { 
+    if(yaEntro) return;
+    sala = document.getElementById('sala-id').value; 
+    if(!sala) return;
     yaEntro = true;
-    const refSala = db.ref('salas/' + sala);
-    refSala.once('value', snap => {
-        let data = snap.val();
-        // Si la sala no existe, inicializamos las propiedades vacías
-        if (!data) {
-            refSala.set({ 
-                jugadores: [], 
-                propiedades: { "init": true }, // Un valor dummy para que no esté vacío
-                clima: 0 
-            });
-        }
-        
-        refSala.child('jugadores/' + miIdx).set({ pos: 0, dinero: 1000 });
-        document.getElementById('btn-unirse').disabled = true;
-        sincronizar();
-    });
+    document.getElementById('btn-unirse').disabled = true;
+    
+    // Aquí está la clave: busca los jugadores actuales y usa .numChildren()
+    db.ref('salas/' + sala + '/jugadores').once('value', snap => { 
+        miIdx = snap.numChildren(); 
+        db.ref('salas/' + sala + '/jugadores/' + miIdx).set({ pos: 0, dinero: 1000, enCarcel: 0, tienePrestamo: false, montoPrestamo: 0 }); 
+        if(miIdx == 0) { db.ref('salas/' + sala + '/turno').set(0); iniciarRelojClima(); }
+        db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: nombres[miIdx] + " ha entrado a la sala." });
+        sincronizar(); 
+    }); 
 }
 
     function comprar(pos) { log(nombres[miIdx] + " compró " + mapa[pos].n); db.ref('salas/' + sala + '/propiedades/' + pos).set({owner: miIdx, nivel: 0, hipotecada: false}); db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => Number(d) - Number(mapa[pos].p)); document.getElementById('modal').style.display = 'none'; }
