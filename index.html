@@ -52,6 +52,7 @@
                 <div id="dado-valor">0</div>
                 <img src="https://i.imgur.com/Nsafzb4.png" style="width:60px; cursor:pointer" onclick="tirarDado()">
                 <div>💖 $<span id="dinero-mio">1000</span></div>
+                <div style="font-size: 8px; margin-top: 5px;">Monto de impuestos actuales: $<span id="monto-impuestos">0</span></div>
             </div>
         </div>
         <div id="banco-container">
@@ -84,7 +85,12 @@
     let miIdx = -1, sala = "", yaEntro = false;
     const nombres = ["Dog", "Horse", "Hat", "Car"];
     const colores = ["#ffb7b2", "#ffd8a8", "#b2f2bb", "#a5d8ff"];
-    const mapa = [{n:"SALIDA",p:0},{n:"A",p:100},{n:"?",p:0},{n:"B",p:200},{n:"C",p:250},{n:"D",p:300},{n:"E",p:350},{n:"F",p:400},{n:"CÁRCEL",p:0},{n:"G",p:500},{n:"H",p:520},{n:"I",p:250},{n:"J",p:300},{n:"K",p:350},{n:"L",p:400},{n:"M",p:500},{n:"N",p:550},{n:"O",p:600},{n:"?",p:0},{n:"P",p:700},{n:"Q",p:750},{n:"R",p:800},{n:"ARCA",p:0},{n:"S",p:900},{n:"T",p:950},{n:"IMPUESTOS",p:0},{n:"U",p:1000},{n:"V",p:1200}];
+    const mapa = [
+        {n:"SALIDA",p:0},{n:"ITAEWON",p:100},{n:"ARCA COMUNAL",p:0},{n:"BUSAN",p:200},{n:"SEOCHO",p:250},{n:"GANGNAM",p:300},{n:"?",p:0},{n:"CHEONGDAM",p:400},
+        {n:"CÁRCEL",p:0},{n:"CAFETERÍA",p:500},{n:"RESTAURANTE",p:520},{n:"?",p:0},{n:"SPA",p:300},{n:"CINE",p:350},{n:"HOSPITAL",p:400},{n:"TEATRO",p:500},
+        {n:"ESTADIO",p:550},{n:"ARCA COMUNAL",p:0},{n:"SMENT",p:600},{n:"YG ENT",p:700},{n:"YJP",p:750},{n:"IMPUESTOS",p:0},{n:"PISCINA PRIVADA",p:800},{n:"YATE",p:900},
+        {n:"PLAYA LOCAL",p:950},{n:"PARADA",p:0},{n:"AEREOPUERTO",p:1000},{n:"TREN",p:1200},{n:"METRO",p:1300}
+    ];
 
     // Variables de clima ampliadas
     const climas = [
