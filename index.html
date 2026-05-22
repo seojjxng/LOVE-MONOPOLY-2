@@ -179,6 +179,25 @@
 
     function log(txt) { db.ref('salas/' + sala + '/log').push(txt); }
     function enviarChat() { let msg = document.getElementById('chat-msg').value; if(msg) { db.ref('salas/' + sala + '/chat').push({ n: nombres[miIdx], m: msg }); document.getElementById('chat-msg').value = ""; } }
+
+
+        function inicializarFicha() {
+    let miFicha = document.getElementById('p' + miIdx);
+    if (miFicha) {
+        miFicha.style.display = 'block'; // La hace visible
+        moverFicha(miIdx, 0); // La mueve a la posición 0
+    }
+}
+
+function moverFicha(idx, pos) {
+    let celda = document.getElementById('cell-' + pos);
+    let ficha = document.getElementById('p' + idx);
+    let rect = celda.getBoundingClientRect();
+    let boardRect = document.getElementById('board').getBoundingClientRect();
+    
+    ficha.style.top = (rect.top - boardRect.top + 20) + 'px';
+    ficha.style.left = (rect.left - boardRect.left + 20) + 'px';
+}
         
     function unirse() { 
     if(yaEntro) return;
@@ -193,15 +212,14 @@
         db.ref('salas/' + sala + '/jugadores').once('value', s => {
             miIdx = s.numChildren();
             let playerRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
+            
             playerRef.set({ pos: 0, dinero: 1000, enCarcel: 0, tienePrestamo: false, montoPrestamo: 0 });
+            inicializarFicha();
             playerRef.onDisconnect().remove();
-            db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: nombres[miIdx] + " entró al chat" });
-            let refChat = db.ref('salas/' + sala + '/chat').push();
-refChat.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " dejó el chat" });
+            db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: nombres[miIdx] + " entró al juego" });
+            
             sincronizar();
         });
-    });
-}
 
     function comprar(pos) { log(nombres[miIdx] + " compró " + mapa[pos].n); db.ref('salas/' + sala + '/propiedades/' + pos).set({owner: miIdx, nivel: 0, hipotecada: false}); db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => Number(d) - Number(mapa[pos].p)); document.getElementById('modal').style.display = 'none'; }
     function mejorar(pos) { log(nombres[miIdx] + " mejoró " + mapa[pos].n); db.ref('salas/' + sala + '/propiedades/' + pos + '/nivel').transaction(n => (Number(n) || 0) + 1); db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => Number(d) - 50); document.getElementById('modal').style.display = 'none'; }
