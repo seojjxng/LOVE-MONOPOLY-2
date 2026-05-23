@@ -438,7 +438,7 @@ function mostrarBotonInicioSiEsAdmin() {
 
 
         // 1. Cuando el jugador 0 se une, mostramos el aviso (o un botón)
-unction verificarInicio() {
+function verificarInicio() {
     db.ref('salas/' + sala + '/iniciada').once('value', snap => {
         // Solo mostramos si NO ha empezado y es el jugador 0 (el admin)
         if (!snap.val() && miIdx === 0) {
