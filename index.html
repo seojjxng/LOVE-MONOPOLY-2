@@ -566,33 +566,27 @@ function mostrarNotificacionMision(titulo) {
 }
 
    function abrirIntercambio() {
-    // 1. LIMPIEZA: Borramos cualquier botón o aviso anterior en el modal
     document.getElementById('modal-extra').innerHTML = ""; 
-    
     db.ref('salas/' + sala).once('value', snap => {
         let data = snap.val();
         let misProps = [];
-        
-        if(data.propiedades) {
+        if(data && data.propiedades) {
             Object.keys(data.propiedades).forEach(pIdx => {
                 if(data.propiedades[pIdx].owner === miIdx) misProps.push(pIdx);
             });
         }
         document.getElementById('modal-title').innerText = "Revender Propiedad";
-        let html = "Selecciona propiedad, precio (100-999) y comprador:<br>";
+        let html = "Selecciona propiedad, precio (250-999) y comprador:<br>";
         if(misProps.length === 0) { html += "No tienes propiedades."; }
         else {
             misProps.forEach(pIdx => {
                 let p = mapa[pIdx];
-                // Agregamos el input para el precio personalizado
                 html += `<br><b>${p.n}</b>: 
-                         <input type="number" id="precio-${pIdx}" placeholder="250" min="100" max="999" style="width: 60px;"> 
+                         <input type="number" id="precio-${pIdx}" placeholder="250" min="250" max="999" style="width: 60px;"> 
                          <select id="sel-${pIdx}">`;
-                
                 data.jugadores.forEach((j, i) => { 
                     if(i !== miIdx) html += `<option value="${i}">${nombres[i]}</option>`; 
                 });
-                
                 html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button>`;
             });
         }
@@ -1057,22 +1051,27 @@ function mostrarNotificacionMision(titulo) {
 });
      
     window.addEventListener('DOMContentLoaded', () => {
-    // 1. Dibujar el tablero
-    mapa.forEach((m, i) => { 
-        const d = document.createElement('div'); 
-        d.className = 'cell'; 
-        d.id = 'cell-' + i; 
-        d.onclick = () => verPropiedad(i);
+        console.log("¡El DOM ha cargado! Iniciando tablero...");
         
-        let g = obtenerGrupo(i);
-        d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
-                       ${m.n}<br>
-                       ${m.p > 0 ? '$' + m.p : ''}
-                       <div class="house-container"></div>`;
-        document.getElementById('board').appendChild(d); 
-    });
+        // 1. Dibujar el tablero
+        mapa.forEach((m, i) => { 
+            const d = document.createElement('div'); 
+            d.className = 'cell'; 
+            d.id = 'cell-' + i; 
+            d.onclick = () => verPropiedad(i);
+            
+            let g = obtenerGrupo(i);
+            d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+                           ${m.n}<br>
+                           ${m.p > 0 ? '$' + m.p : ''}
+                           <div class="house-container"></div>`;
+            document.getElementById('board').appendChild(d); 
+        });
+
+    
+        sincronizar(); 
+        escucharOfertas();
         
-         
     });
 </script>
 </body>
