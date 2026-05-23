@@ -1622,20 +1622,31 @@ window.iniciarJuegoConfirmado = function() {
 };
 
 
-       window.addEventListener('DOMContentLoaded', () => {
-        if (typeof renderizarTablero === 'function') renderizarTablero();
-        if (sessionStorage.getItem('salaActual')) window.unirse();
-        
-        // Listener chat
-        const chatInput = document.getElementById('chat-msg');
-        if (chatInput) {
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && typeof enviarChat === 'function') enviarChat();
-            });
-        }
-    });
+       // --- INICIALIZACIÓN DEL SISTEMA ---
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. Renderizado del tablero
+    if (typeof renderizarTablero === 'function') {
+        renderizarTablero();
+    }
 
-})();
+    // 2. Auto-unión si hay sesión
+    if (sessionStorage.getItem('salaActual')) {
+        window.unirse();
+    }
+
+    // 3. Listener ÚNICO para el chat
+    const chatInput = document.getElementById('chat-msg');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                // Asegúrate de que enviarChat() esté definida en tu código
+                if (typeof enviarChat === 'function') {
+                    enviarChat();
+                }
+            }
+        });
+    }
+});
 </script>
 </body>
 </html>
