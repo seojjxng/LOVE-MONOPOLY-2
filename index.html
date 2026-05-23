@@ -1130,7 +1130,7 @@ function renderizarInterfaz() {
                 enCarcel: 2, 
                 seisSeguidos: 0 
             });
-            gestionarFraude();
+            // gestionarFraude(); // Asegúrate de que esta función exista también
             pasarTurno();
             setTimeout(() => manejarCasilla(8), 600);
         } else {
@@ -1147,6 +1147,16 @@ function renderizarInterfaz() {
             setTimeout(() => manejarCasilla(nuevaPos), 600);
         }
     }); 
+}
+
+function pasarTurno() {
+    db.ref('salas/' + sala + '/turno').once('value', snapshot => {
+        let turnoActual = snapshot.val();
+        // Cambia al siguiente turno (0 -> 1 -> 2 -> 3 -> 0)
+        let siguienteTurno = (turnoActual + 1) % 4;
+        db.ref('salas/' + sala + '/turno').set(siguienteTurno);
+        log("Turno cambiado al jugador " + siguienteTurno);
+    });
 }                                                             
                                                                                                        
     function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
