@@ -673,22 +673,29 @@ function mostrarNotificacionMision(titulo) {
     function intentarEvasion(d, a, m) { let exito = Math.random() < 0.30; if(exito) { let montoFinal = Math.floor(m / 2); procesarPago(d, a, montoFinal, true); log(nombres[d] + " evadió el alquiler exitosamente. Pagará $" + montoFinal); } else { let montoFinal = m + 50; procesarPago(d, a, montoFinal, false); log(nombres[d] + " falló su evasión de pago. Paga $" + montoFinal); } }
 
     function manejarCasilla(pos) {
-        let p = mapa[pos];
-        if (p.n === "A LA CÁRCEL" || p.n === "CÁRCEL") {
-            db.ref('salas/'+sala+'/jugadores/'+miIdx).update({pos: 8, enCarcel: 2});
-            log(nombres[miIdx] + " fue enviado a la cárcel.");
-            document.getElementById('modal-title').innerText = "Cárcel";
-            document.getElementById('modal-text').innerText = "¡Estás en la cárcel!";
-            document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="pagarFianza()">Pagar Fianza ($100)</button><button class="btn" onclick="quedarseEnCarcel()">Quedarse</button>`;
-            document.getElementById('modal').style.display = 'block';
-            turnosSeis = 0;
-            pasarTurno();
-            return;
-        }
-        if (p.n === "?" || p.n === "ARCA COMUNAL") { 
+    let p = mapa[pos];
+    
+    // CASO CÁRCEL
+    if (p.n === "A LA CÁRCEL" || p.n === "CÁRCEL") {
+        db.ref('salas/'+sala+'/jugadores/'+miIdx).update({pos: 8, enCarcel: 2});
+        log(nombres[miIdx] + " fue enviado a la cárcel.");
+        document.getElementById('modal-title').innerText = "Cárcel";
+        document.getElementById('modal-text').innerText = "¡Estás en la cárcel!";
+        document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="pagarFianza()">Pagar Fianza ($100)</button><button class="btn" onclick="quedarseEnCarcel()">Quedarse</button>`;
+        document.getElementById('modal').style.display = 'block';
+        turnosSeis = 0;
+        pasarTurno();
+        return;
+    }
+    
+    // CASO EVENTOS
+    if (p.n === "?" || p.n === "ARCA COMUNAL") { 
         ejecutarEvento(p.n); 
         return; 
     }
+    
+    // --- IMPORTANTE: ESTA LLAVE CIERRA LA FUNCIÓN ---
+}
 
 
         if (p.n === "PARADA") {
