@@ -103,6 +103,8 @@
                 <img src="https://i.imgur.com/Nsafzb4.png" style="width:60px; cursor:pointer" onclick="tirarDado()">
                 <div>💖 $<span id="dinero-mio">1000</span></div>
                 <div style="font-size: 8px; margin-top: 5px;">Monto de impuestos actuales: $<span id="monto-impuestos">0</span></div>
+                
+                <button class="btn" onclick="abrirModalMisiones()">Ver Misiones</button>
             </div>
         </div>
 
@@ -111,22 +113,8 @@
             <button class="btn" style="width: 140px" onclick="pagarPrestamo()">💳 Pagar Préstamo</button>
             <button class="btn" style="width: 140px" onclick="verSaldos()">💰 Ver Saldos</button>
             <button class="btn" style="width: 140px; background: #ff59aa;" onclick="abrirIntercambio()">🤝 Intercambiar</button>
-            <button class="btn" style="width: 140px; background: #8e44ad;" onclick="abrirModalMisiones()">📜 Misiones</button>
         </div>
     </div>
-
-        </div> <div id="modal-misiones" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; text-align: center; z-index: 1000;"> 
-    <h3>Misiones Disponibles</h3>
-    <ul id="lista-misiones" style="list-style: none; padding: 0; text-align: left; max-height: 300px; overflow-y: auto; font-size: 12px;"></ul>
-    <button class="btn" onclick="document.getElementById('modal-misiones').style.display = 'none'">Cerrar</button>
-</div>
-
-<div id="modal">
-    <h3 id="modal-title"></h3>
-    <div id="modal-text"></div>
-    <div id="modal-extra"></div>
-    <button class="btn" id="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
-</div>
 
     <div class="sidebar">
         <div class="panel">
@@ -141,6 +129,12 @@
             <button class="btn" onclick="enviarChat()">Enviar</button>
         </div>
     </div>
+</div>
+
+<div id="modal-misiones" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; text-align: center; z-index: 1000;"> 
+    <h3>Misiones Disponibles</h3>
+    <ul id="lista-misiones" style="list-style: none; padding: 0; text-align: left; max-height: 300px; overflow-y: auto; font-size: 12px;"></ul>
+    <button class="btn" onclick="document.getElementById('modal-misiones').style.display = 'none'">Cerrar</button>
 </div>
         
     </div></div><div id="modal">
