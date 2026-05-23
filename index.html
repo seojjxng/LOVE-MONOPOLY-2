@@ -984,10 +984,16 @@ function mostrarNotificacionMision(titulo) {
     db.ref('salas/' + sala).on('value', snap => { 
         let s = snap.val(); 
         
-        // PROTECCIÓN 1: Si no hay sala, salimos.
-        if (!s) return; 
+        // 1. Validaciones de seguridad para evitar errores de tipo
+        if (!s) return;
+        
+        // Si no existen jugadores, no hacemos nada y salimos (evita el error)
+        if (!s.jugadores) {
+            console.log("Esperando a que se unan jugadores...");
+            return;
+        }
 
-        // 1. Sincronización del Chat
+        // Chat
         let chatLog = document.getElementById('chat-log');
         if (chatLog && s.chat) {
             chatLog.innerHTML = ""; 
@@ -998,26 +1004,22 @@ function mostrarNotificacionMision(titulo) {
             chatLog.scrollTop = chatLog.scrollHeight;
         }
 
-        // 2. Sincronización de Estado y Tablero
-        // PROTECCIÓN 2: Si jugadores no existe, mostramos valores por defecto en lugar de romper
-        let jugadores = s.jugadores || [];
-        let miJugador = jugadores[miIdx] || { dinero: 0 };
-
-        document.getElementById('dinero-mio').innerText = miJugador.dinero;
-        document.getElementById('turno-text').innerText = "Turno: " + (nombres[s.turno] || "...");
-        
-        if(s.clima !== undefined && climas[s.clima]) { 
-            document.getElementById('clima-display').innerText = "Estación: " + climas[s.clima].n; 
+        // Dinero y Turno
+        if (document.getElementById('dinero-mio')) {
+            document.getElementById('dinero-mio').innerText = (s.jugadores[miIdx] ? s.jugadores[miIdx].dinero : 0);
+        }
+        if (document.getElementById('turno-text')) {
+            document.getElementById('turno-text').innerText = "Turno: " + (nombres[s.turno] || "...");
         }
 
-        // 3. Actualizar posiciones (Solo si jugadores es un arreglo)
-        if (Array.isArray(jugadores)) {
-            jugadores.forEach((j, i) => { 
+        // Actualizar posiciones (CON VALIDACIÓN DE TIPO ARRAY)
+        if (Array.isArray(s.jugadores)) {
+            s.jugadores.forEach((j, i) => { 
                 let el = document.getElementById('p' + i); 
-                if(el && j) { // Verificamos que 'j' también exista
+                if (el && j) {
                     el.style.display = 'block'; 
                     let cell = document.getElementById('cell-' + j.pos); 
-                    if(cell) {
+                    if (cell) {
                         el.style.left = (cell.offsetLeft + 30) + 'px'; 
                         el.style.top = (cell.offsetTop + 30) + 'px';
                     }
