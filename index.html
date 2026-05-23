@@ -536,24 +536,17 @@ function mostrarNotificacionMision(titulo) {
         let modalTitle = document.getElementById('modal-title');
         let modalText = document.getElementById('modal-text');
         let modalExtra = document.getElementById('modal-extra');
-
         modalTitle.innerText = "🏦 Banco Central";
         
         if (j.tienePrestamo) {
             modalText.innerHTML = `<p>Tienes un préstamo activo de: <b>$${j.montoPrestamo}</b></p>`;
-            modalExtra.innerHTML = `<button class="btn" onclick="pagarPrestamo()">Liquidar Deuda</button>
-                                    <button class="btn" onclick="cerrarModal()">Cerrar</button>`;
+            modalExtra.innerHTML = `<button class="btn" onclick="pagarPrestamo()">Liquidar Deuda</button> <button class="btn" onclick="cerrarModal()">Cerrar</button>`;
         } else {
             let html = `<p>Tu saldo: <b>$${j.dinero}</b></p><p>Selecciona un monto para tu préstamo:</p>`;
+            // Ejemplo de botones de préstamo
+            html += `<button class="btn" onclick="solicitarPrestamo(300)">$300</button>
+                     <button class="btn" onclick="solicitarPrestamo(500)">$500</button>`;
             modalText.innerHTML = html;
-            
-            // Botones de montos
-            let montos = [300, 500, 700, 900];
-            modalExtra.innerHTML = "";
-            montos.forEach(m => {
-                modalExtra.innerHTML += `<button class="btn" onclick="pedirPrestamo(${m})">$${m}</button> `;
-            });
-            
         }
         document.getElementById('modal').style.display = 'block';
     });
