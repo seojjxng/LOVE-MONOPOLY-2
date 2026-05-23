@@ -118,7 +118,7 @@
 
         // 1. Buscamos el grupo y definimos el estilo
         let grupo = obtenerGrupo(i);
-        let colorStyle = grupo ? `background-color: ${grupo.color};` : 'display: none;';
+        let colorStyle = grupo ? `background-color: ${grupo.color} !important;` : 'display: none;';
 
         // 2. Asignamos el HTML con el estilo ya integrado
         div.innerHTML = `
@@ -544,7 +544,7 @@ window.onload = crearCasillasDOM;
             if(s.propiedades) { Object.keys(s.propiedades).forEach(pos => { 
                 let cell = document.getElementById('cell-' + pos);
                 if(cell) {
-                    cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner];
+                    cell.style.border = "2px solid " + (s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner]);
                     let hc = cell.querySelector('.house-container'); hc.innerHTML = "";
                     let nivel = s.propiedades[pos].nivel || 0;
                     if(nivel > 0 && nivel < 5) { for(let i=0; i<nivel; i++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
