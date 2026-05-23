@@ -1076,35 +1076,33 @@ function mostrarNotificacionMision(titulo) {
 });
      
     window.addEventListener('DOMContentLoaded', () => {
-    // 1. Dibujar el tablero
+    const board = document.getElementById('board');
+    if (!board) return;
+
     mapa.forEach((m, i) => { 
-    const d = document.createElement('div'); 
-    d.className = 'cell'; 
-    d.id = 'cell-' + i; 
-    d.onclick = () => verPropiedad(i);
-    
-    let g = obtenerGrupo(i);
-    
-    // Si es un ferrocarril (grupo crema), le damos un borde distintivo
-    if (g && g.color === "#f5f5dc") {
-        d.style.border = "3px solid #f5f5dc"; 
-        d.style.backgroundColor = "#fffef0"; // Un tono muy suave para que resalte
-    } else if (g) {
-        // Para las otras propiedades, mantenemos tu lógica del strip
-        d.innerHTML = `<div class="strip" style="background: ${g.color}"></div>`;
-    }
-    
-    // Añadimos el contenido de la celda
-    d.innerHTML += `<div class="contenido" style="padding-top: 5px;">
-                        ${m.n}<br>
-                        ${m.p > 0 ? '$' + m.p : ''}
-                    </div>`;
-                    
-    document.getElementById('board').appendChild(d);
-});
+        const d = document.createElement('div'); 
+        d.className = 'cell'; 
+        d.id = 'cell-' + i; 
+        d.onclick = () => verPropiedad(i);
         
-         
+        let g = obtenerGrupo(i);
+        
+        // Estilo según grupo
+        if (g && g.color === "#f5f5dc") {
+            d.style.border = "3px solid #f5f5dc"; 
+            d.style.backgroundColor = "#fffef0";
+        } else if (g) {
+            d.innerHTML = `<div class="strip" style="background: ${g.color}"></div>`;
+        }
+        
+        // Agregar texto
+        d.innerHTML += `<div class="contenido" style="font-size: 7px; color: #c71585;">
+                            ${m.n}<br>
+                            ${m.p > 0 ? '$' + m.p : ''}
+                        </div>`;
+        board.appendChild(d);
     });
+});
 </script>
 </body>
 </html>
