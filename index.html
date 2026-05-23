@@ -332,28 +332,66 @@ function pagarPenalidad() {
     cerrarModal();
 }
     
-    function unirse() {
+    window.unirse = function() {
     let salaGuardada = sessionStorage.getItem('salaActual');
     let inputSala = document.getElementById('sala-id');
-    sala = salaGuardada || (inputSala ? inputSala.value.trim() : "");
-    if (!sala) return;
+    window.sala = salaGuardada || (inputSala ? inputSala.value.trim() : "");
+    
+    if (!window.sala) {
+        alert("Por favor, ingresa un ID de sala.");
+        return;
+    }
 
-    db.ref('salas/' + sala + '/iniciada').once('value', snap => {
-        if (snap.val() === true) { alert("Partida iniciada"); return; }
-        if (yaEntro) return;
-        yaEntro = true;
-        
-        db.ref('salas/' + sala + '/jugadores').once('value', snap => {
-            miIdx = snap.numChildren();
-            let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
-            jugadorRef.set({ pos: 0, dinero: 1000, nombre: "Jugador " + (miIdx+1), online: true }).then(() => {
-                sessionStorage.setItem('salaActual', sala);
-                sincronizar();
-                configurarListenerInicio(); // Llamada crítica aquí
-            });
+    // 1. Verificación de seguridad
+    db.ref('salas/' + window.sala + '/iniciada').once('value', snap => {
+        if (snap.val() === true) {
+            alert("La partida ya ha comenzado, no puedes entrar.");
+            sessionStorage.removeItem('salaActual');
+            return;
+        }
+
+        // 2. Transacción para asegurar un índice único (Evita conflictos)
+        db.ref('salas/' + window.sala + '/jugadores').transaction(jugadores => {
+            if (jugadores === null) jugadores = {};
+            
+            // Si ya entramos, abortamos
+            if (window.yaEntro) return;
+            
+            let idx = Object.keys(jugadores).length;
+            window.miIdx = idx;
+            
+            jugadores[idx] = { 
+                pos: 0, 
+                dinero: 1000, 
+                nombre: "Jugador " + (idx + 1), 
+                online: true 
+            };
+            
+            return jugadores;
+        }, (error, committed, snapshot) => {
+            if (committed) {
+                window.yaEntro = true;
+                sessionStorage.setItem('salaActual', window.sala);
+                
+                // Configurar desconexión
+                db.ref('salas/' + window.sala + '/jugadores/' + window.miIdx + '/online')
+                  .onDisconnect().set(false);
+                
+                // Avisar al chat
+                db.ref('salas/' + window.sala + '/chat').push({ 
+                    n: "Sistema", 
+                    m: "Jugador " + (window.miIdx + 1) + " ha entrado." 
+                });
+                
+                // Inicializar juego
+                if (typeof sincronizar === 'function') sincronizar();
+                if (typeof verificarInicio === 'function') verificarInicio();
+            } else if (error) {
+                console.error("Error al unirse:", error);
+            }
         });
     });
-}
+};
 
         function renderizarInterfaz() {
     const contenedor = document.getElementById('contenedor-configuracion');
