@@ -1622,24 +1622,23 @@ window.iniciarJuegoConfirmado = function() {
 };
 
 
-       // --- INICIALIZACIÓN DEL SISTEMA ---
+// --- INICIALIZACIÓN DEL SISTEMA ---
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. Renderizado del tablero
+    // 1. Renderizado inicial
     if (typeof renderizarTablero === 'function') {
         renderizarTablero();
     }
 
-    // 2. Auto-unión si hay sesión
+    // 2. Intentar unirse si hay sala guardada
     if (sessionStorage.getItem('salaActual')) {
         window.unirse();
     }
 
-    // 3. Listener ÚNICO para el chat
+    // 3. Listener del chat (Único)
     const chatInput = document.getElementById('chat-msg');
     if (chatInput) {
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                // Asegúrate de que enviarChat() esté definida en tu código
                 if (typeof enviarChat === 'function') {
                     enviarChat();
                 }
