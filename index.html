@@ -823,6 +823,7 @@ function renderizarInterfaz() {
 
     function manejarCasilla(pos) {
     let p = mapa[pos];
+    if (!p) return;
     
     // CASO CÁRCEL
     if (p.n === "A LA CÁRCEL" || p.n === "CÁRCEL") {
@@ -832,7 +833,6 @@ function renderizarInterfaz() {
         document.getElementById('modal-text').innerText = "¡ALTO AHÍ! Estás bajo arresto.";
         document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="pagarFianza()">Pagar Fianza ($100)</button><button class="btn" onclick="quedarseEnCarcel()">Quedarse</button>`;
         document.getElementById('modal').style.display = 'block';
-        turnosSeis = 0;
         pasarTurno();
         return;
     }
@@ -851,9 +851,8 @@ function renderizarInterfaz() {
                 db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => d + acumulado);
                 log(nombres[miIdx] + " llegó a la PARADA y cobró $" + acumulado + " de impuestos.");
                 db.ref('salas/' + sala + '/impuestosAcumulados').set(0);
-            } else {
-                log(nombres[miIdx] + " llegó a la PARADA, pero no había impuestos.");
             }
+            pasarTurno();
         });
         return; 
     }
@@ -867,46 +866,16 @@ function renderizarInterfaz() {
         });
         db.ref('salas/' + sala + '/impuestosAcumulados').transaction(a => (a || 0) + 100);
         log(nombres[miIdx] + " pagó impuestos de $100.");
+        pasarTurno();
         return;
     }
 
-    // CASO FERROCARRILES (Color crema)
-    let g = obtenerGrupo(pos);
-    if (g && g.color === "#f5f5dc") {
-        db.ref('salas/' + sala).once('value', snap => {
-            let data = snap.val();
-            let prop = data.propiedades ? data.propiedades[pos] : null;
-            
-            if (!prop) {
-                verPropiedad(pos, true);
-            } else if (prop.owner !== miIdx) {
-                // Lógica 2vs2: Evitar cobro entre compañeros
-                let es2vs2 = (data.modo === '2vs2');
-                let equipoMiIdx = (miIdx === 0 || miIdx === 1) ? 'A' : 'B';
-                let equipoDueño = (prop.owner === 0 || prop.owner === 1) ? 'A' : 'B';
-
-                if (es2vs2 && equipoMiIdx === equipoDueño) {
-                    log(nombres[miIdx] + " cayó en transporte de su compañero " + nombres[prop.owner] + ". No paga alquiler.");
-                    return;
-                }
-
-                let trans = [8, 24, 26, 27];
-                let count = trans.filter(i => data.propiedades[i] && data.propiedades[i].owner === prop.owner).length;
-                let tabla = { 1: 200, 2: 250, 3: 350, 4: 450 }; // Precio actualizado
-                let alquiler = tabla[count] || 200;
-                procesarPago(miIdx, prop.owner, alquiler);
-                log(nombres[miIdx] + " pagó $" + alquiler + " de transporte a " + nombres[prop.owner]);
-            } else {
-                verPropiedad(pos, false);
-            }
-        });
-        return;
-    }
-
-    // SI NO ES NINGUNA DE LAS ANTERIORES, ES PROPIEDAD NORMAL
+    // CASO PROPIEDADES (Normales y Ferrocarriles)
     verPropiedad(pos, true);
 }
-       function verPropiedad(pos, esCaida = false) {
+
+// 3. Función verPropiedad (Mantén tu versión actual, es correcta)
+function verPropiedad(pos, esCaida = false) {
     let p = mapa[pos];
     if (p.p === 0) return;
     
@@ -1008,30 +977,28 @@ function renderizarInterfaz() {
 }
 
         function pasarTurno() {
-    // Asegúrate de que turnosSeis esté definida o borra esta línea si no la usas
-    if (typeof turnosSeis !== 'undefined') turnosSeis = 0; 
+    // Si usas esta variable, asegúrate de tenerla declarada (let turnosSeis = 0;)
+    if (typeof turnosSeis !== 'undefined') turnosSeis = 0;
 
-    db.ref('salas/'+sala+'/jugadores').once('value', snap => {
+    db.ref('salas/' + sala + '/jugadores').once('value', snap => {
         let total = snap.numChildren();
-        db.ref('salas/'+sala+'/turno').once('value', tSnap => {
+        db.ref('salas/' + sala + '/turno').once('value', tSnap => {
             let t = Number(tSnap.val());
             let nuevoTurno = (t + 1) % total;
             
-            db.ref('salas/'+sala+'/jugadores/'+nuevoTurno).once('value', jSnap => {
+            db.ref('salas/' + sala + '/jugadores/' + nuevoTurno).once('value', jSnap => {
                 let jugador = jSnap.val();
-                if(jugador.enCarcel > 0) {
+                if (jugador && jugador.enCarcel > 0) {
                     log(nombres[nuevoTurno] + " está en la cárcel.");
-                    db.ref('salas/'+sala+'/jugadores/'+nuevoTurno).update({ enCarcel: jugador.enCarcel - 1 });
-                    // Salta al siguiente jugador porque este está en la cárcel
-                    db.ref('salas/'+sala+'/turno').set((nuevoTurno + 1) % total);
+                    db.ref('salas/' + sala + '/jugadores/' + nuevoTurno).update({ enCarcel: jugador.enCarcel - 1 });
+                    db.ref('salas/' + sala + '/turno').set((nuevoTurno + 1) % total);
                 } else {
-                    db.ref('salas/'+sala+'/turno').set(nuevoTurno);
+                    db.ref('salas/' + sala + '/turno').set(nuevoTurno);
                 }
             });
         });
     });
 }
-
         
     function ejecutarEvento(nombreCasilla) {
         let carta = obtenerCarta();
