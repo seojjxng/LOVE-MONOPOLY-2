@@ -257,45 +257,68 @@ function pagarPenalidad() {
     cerrarModal();
 }
     
-    function unirse() { 
-    if(yaEntro) return;
-    sala = document.getElementById('sala-id').value; 
-    if(!sala) return;
-    yaEntro = true;
-    document.getElementById('btn-unirse').disabled = true;
+    function unirse() {
+    // 1. Obtener ID de sala desde el input
+    let inputSala = document.getElementById('sala-id');
+    if (!inputSala || !inputSala.value) {
+        alert("Por favor, ingresa un ID de sala.");
+        return;
+    }
+    
+    // Aseguramos que 'sala' sea una cadena limpia
+    sala = inputSala.value.trim();
 
-    db.ref('salas/' + sala + '/jugadores').once('value', snap => { 
-        miIdx = snap.numChildren(); 
+    if (yaEntro) return;
+    yaEntro = true;
+    
+    let btn = document.getElementById('btn-unirse');
+    if (btn) btn.disabled = true;
+
+    // 2. Usamos .transaction o .once para asegurar que el índice sea único
+    db.ref('salas/' + sala + '/jugadores').once('value', snap => {
+        miIdx = snap.numChildren();
         
-        // 1. DEFINIMOS LA REFERENCIA PRIMERO
+        // Proteccion: Si no existe el nombre, usamos "Jugador " + miIdx
+        let miNombre = (typeof nombres !== 'undefined' && nombres[miIdx]) ? nombres[miIdx] : ("Jugador " + (miIdx + 1));
+        
         let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
         
-        // 2. HACEMOS EL SET
-        jugadorRef.set({ 
-            pos: 0, 
-            dinero: 1000, 
-            enCarcel: 0, 
-            tienePrestamo: false, 
-            montoPrestamo: 0 
-        }); 
-        
-        // 3. AHORA SÍ, USAMOS LA VARIABLE PARA LA DESCONEXIÓN
-        jugadorRef.onDisconnect().remove();
-        
-        db.ref('salas/' + sala + '/chat').onDisconnect().push({ 
-            n: "Sistema", 
-            m: nombres[miIdx] + " ha abandonado la partida." 
+        // 3. Crear el jugador
+        jugadorRef.set({
+            pos: 0,
+            dinero: 1000,
+            enCarcel: 0,
+            nombre: miNombre, // Es mejor guardar el nombre en Firebase
+            tienePrestamo: false,
+            montoPrestamo: 0
+        }).then(() => {
+            // 4. Configurar eventos de desconexión
+            jugadorRef.onDisconnect().remove();
+            
+            db.ref('salas/' + sala + '/chat').onDisconnect().push({
+                n: "Sistema",
+                m: miNombre + " ha abandonado la partida."
+            });
+
+            // 5. Lógica de inicio de sala
+            if (miIdx === 0) {
+                db.ref('salas/' + sala + '/turno').set(0);
+                if (typeof iniciarRelojClima === 'function') iniciarRelojClima();
+            }
+
+            db.ref('salas/' + sala + '/chat').push({
+                n: "Sistema",
+                m: miNombre + " ha entrado a la sala."
+            });
+
+            // 6. Iniciar sincronización
+            sincronizar();
+        }).catch(error => {
+            console.error("Error al unirse a la sala:", error);
+            yaEntro = false;
+            if (btn) btn.disabled = false;
         });
-        
-        if(miIdx == 0) { db.ref('salas/' + sala + '/turno').set(0); iniciarRelojClima(); }
-        
-        db.ref('salas/' + sala + '/chat').push({ 
-            n: "Sistema", 
-            m: nombres[miIdx] + " ha entrado a la sala." 
-        });
-        
-        sincronizar(); 
-    }); 
+    });
 }
 
         function abrirModalMisiones() {
