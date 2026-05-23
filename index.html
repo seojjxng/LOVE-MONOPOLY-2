@@ -135,14 +135,12 @@
     <h3>Misiones Disponibles</h3>
     <ul id="lista-misiones" style="list-style: none; padding: 0; text-align: left; max-height: 300px; overflow-y: auto; font-size: 12px;"></ul>
     <button class="btn" onclick="document.getElementById('modal-misiones').style.display = 'none'">Cerrar</button>
-<div id="modal">
+</div></div><div id="modal">
     <h3 id="modal-title"></h3>
     <div id="modal-text"></div>
     <div id="modal-extra"></div>
-    <hr> <button class="btn" style="background:#555" onclick="cerrarModal()">Cerrar</button>
-</div>
+    <button class="btn" id="btn-cerrar" onclick="cerrarModal()">Cerrar</button></div><script>
 
-<script>
     const firebaseConfig = { databaseURL: "https://monopolovely-default-rtdb.firebaseio.com" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
