@@ -444,11 +444,7 @@ function mostrarNotificacionMision(titulo) {
     }
 }
 
-        // Dentro de tu función sincronizar, donde escuchas el estado de la sala:
-if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
-    let m = s.jugadores[miIdx].ultimaMision;
 
-    // ... (tus otros casos como "negociador", "inversor", etc.)
 
     if (m === "intocable") {
         mostrarNotificacionMision("¡El Intocable! Otros jugadores han caído 5 veces en tus propiedades. ¡Has ganado $400!");
