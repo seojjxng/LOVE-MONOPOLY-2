@@ -53,6 +53,15 @@
                 <img src="https://i.imgur.com/Nsafzb4.png" style="width:60px; cursor:pointer" onclick="tirarDado()">
                 <div>💖 $<span id="dinero-mio">1000</span></div>
                 <div style="font-size: 8px; margin-top: 5px;">Monto de impuestos actuales: $<span id="monto-impuestos">0</span></div>
+                <button id="btn-misiones" onclick="abrirModalMisiones()">Ver Misiones</button>
+</div>
+            <div id="modal-misiones" class="modal" style="display:none;">
+    <div class="modal-content">
+        <h3>Misiones Disponibles</h3>
+        <ul id="lista-misiones"></ul>
+        <button onclick="document.getElementById('modal-misiones').style.display='none'">Cerrar</button>
+    </div>
+</div>
             </div>
         </div>
         <div id="banco-container">
@@ -159,6 +168,32 @@
             sincronizar(); 
         }); 
     }
+
+        function abrirModalMisiones() {
+    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/misionesCumplidas').once('value', snap => {
+        let completadas = snap.val() || {};
+        let lista = document.getElementById('lista-misiones');
+        lista.innerHTML = ""; // Limpiar lista anterior
+
+        const misiones = [
+            { id: 'inversorInicial', titulo: 'Inversor Inicial. Poseer al menos 3 propiedades de cualquier tipo.', rec: 200 },
+            { id: 'coleccionista', titulo: 'El coleccionista. Ser el primero en completar cualquier set de color.', rec: 300 },
+            { id: 'negociador', titulo: 'El negociador. Por realizar tu primer intercambio exitoso con otro jugador.', rec: 400 },
+            { id: 'cajafuerte', titulo: 'Caja fuerte. Acumular un total de $2,000 en efectivo en tu inventario.', rec: 650 },
+            { id: 'renovador', titulo: 'Renovador. Construir un total de 5 casas en tus propiedades.', rec: 500 },
+            { id: 'monopolio', titulo: 'Monopolio total. Ser dueño de los 3 sets más caros del tablero', rec: 1500 },
+            { id: 'intocable', titulo: 'El intocable. Lograr que otro jugador caiga en tus propiedades 5 veces sin declararte en bancarrota.', rec: 400}
+            ];
+
+        misiones.forEach(m => {
+            let item = document.createElement('li');
+            item.innerHTML = `${m.titulo} - <b>$${m.rec}</b> ${completadas[m.id] ? '✅' : '⏳'}`;
+            lista.appendChild(item);
+        });
+
+        document.getElementById('modal-misiones').style.display = 'block';
+    });
+}
     
     function verificarBancarrota(jugadorIdx, saldo) {
         if (saldo < 0) {
