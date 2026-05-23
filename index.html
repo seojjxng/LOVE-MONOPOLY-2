@@ -827,7 +827,7 @@ function mostrarNotificacionMision(titulo) {
             <div class="card-header">${p.n}</div>`;
             
         if (esFerrocarril) {
-            htmlCard += `<p>Valor de compra: <b>$25</b></p>`;
+            htmlCard += `<p>Valor de compra: <b>$600</b></p>`;
         } else {
             htmlCard += `<p>Valor de compra: <b>$${p.p}</b></p>`;
         }
@@ -836,7 +836,7 @@ function mostrarNotificacionMision(titulo) {
         if (!prop) {
             htmlCard += `<p>Estado: <b>Disponible</b></p>`;
             if(esCaida) {
-                let precioCompra = esFerrocarril ? 25 : p.p;
+                let precioCompra = esFerrocarril ? 600 : p.p;
                 extra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar ($${precioCompra})</button>`;
             }
         } else if (prop.owner === miIdx) {
@@ -856,7 +856,7 @@ function mostrarNotificacionMision(titulo) {
             if (esFerrocarril) {
                 let transportes = [8, 24, 26, 27];
                 let count = transportes.filter(idx => data.propiedades[idx] && data.propiedades[idx].owner === prop.owner).length;
-                let tabla = { 1: 100, 2: 150, 3: 250, 4: 300 };
+                let tabla = { 1: 200, 2: 250, 3: 350, 4: 450 };
                 alqFinal = tabla[count] || 100;
             } else {
                 alqFinal = Math.floor(p.p * porcentajes[prop.nivel || 0] * multClima);
