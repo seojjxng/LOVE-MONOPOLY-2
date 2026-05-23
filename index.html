@@ -884,20 +884,25 @@ function mostrarNotificacionMision(titulo) {
                     mostrarNotificacionMision(mensajes[m]);
                     // Limpiamos el aviso para que no se repita
                     db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
-                }
+               }
             }
-        }); // Este es el cierre correcto del .on('value')
-    }
-
+        });  
+     
     mapa.forEach((m, i) => { 
     const d = document.createElement('div'); 
     d.className = 'cell'; 
     d.id = 'cell-' + i; 
     d.onclick = () => verPropiedad(i);
-        d.innerHTML = `<div class="strip"></div>${m.n}<br>${m.p > 0 ? '$'+m.p : ''}<div class="house-container"></div>`; 
-         let g = obtenerGrupo(i);
-    d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>${m.n}<br>${m.p > 0 ? '$'+m.p : ''}<div class="house-container"></div>`; 
     
+    // Obtenemos el grupo una sola vez
+    let g = obtenerGrupo(i);
+    
+    // Asignamos el innerHTML UNA SOLA VEZ
+    d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+                   ${m.n}<br>
+                   ${m.p > 0 ? '$' + m.p : ''}
+                   <div class="house-container"></div>`; 
+                   
     document.getElementById('board').appendChild(d); 
 });
 </script>
