@@ -378,10 +378,10 @@
             extra.innerHTML = `
                 <button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alquilerFinal})">Pagar Alquiler</button>
                 <button class="btn" style="background:#ff80bf" onclick="intentarEvasion(${miIdx}, ${prop.owner}, ${alquilerFinal})">Intentar Evasión</button>
-            `;
-        }
-    }
-}
+           `;
+                    }
+                } // Cierre del else de hipotecada
+            }
             htmlCard += `</div>`;
             document.getElementById('modal-text').innerHTML = htmlCard;
             document.getElementById('modal').style.display = 'block';
