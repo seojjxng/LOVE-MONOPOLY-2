@@ -32,6 +32,8 @@
         .card-property { border: 2px solid #c71585; padding: 10px; border-radius: 5px; background: white; margin-bottom: 10px; }
         .card-header { background: #ff80bf; color: white; padding: 5px; font-weight: bold; margin-bottom: 10px; }
         .empty-debt { padding: 10px; background: #fff; border: 1px solid #ff80bf; border-radius: 10px; color: #ff59aa; font-weight: bold; }
+        .weather-alert { background: #e3f2fd !important; border: 3px solid #2196f3 !important; }
+        .weather-title { color: #1976d2; font-size: 18px; font-weight: bold; margin-bottom: 10px; }
         #banco-container { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; background: #fff0f9; border: 2px solid #ffccd5; border-radius: 20px; padding: 15px; gap: 10px; }
         /* Posicionamiento de las 29 casillas */
         #cell-0 { grid-column: 1; grid-row: 1; } #cell-1 { grid-column: 2; grid-row: 1; } #cell-2 { grid-column: 3; grid-row: 1; } #cell-3 { grid-column: 4; grid-row: 1; } #cell-4 { grid-column: 5; grid-row: 1; } #cell-5 { grid-column: 6; grid-row: 1; } #cell-6 { grid-column: 7; grid-row: 1; } #cell-7 { grid-column: 8; grid-row: 1; }
@@ -108,20 +110,37 @@
 
     // Variables de clima ampliadas
     const climas = [
-        {n: "Lluvia Ligera", mult: 1.0}, {n: "Tormenta", mult: 1.0},
-        {n: "Ventisca", mult: 1.0}, {n: "Nevada Suave", mult: 1.0},
-        {n: "Primavera Soleada", mult: 1.0}, {n: "Primavera Lluviosa", mult: 1.0},
-        {n: "Verano Caluroso", mult: 1.0}, {n: "Verano Nublado", mult: 1.0},
-        {n: "Otoño Fresco", mult: 1.0}, {n: "Otoño Ventoso", mult: 1.0}
-    ];
+    {n: "Primavera Soleada", mult: 1.0, tipo: "normal"},
+    {n: "Verano Caluroso", mult: 1.0, tipo: "normal"},
+    {n: "Otoño Fresco", mult: 1.0, tipo: "normal"},
+    {n: "Ventisca", mult: 0.5, tipo: "evento"}, // Penalización 50%
+    {n: "Alerta de Tornado", mult: 0.2, tipo: "evento"}, // Penalización 80%
+    {n: "Lluvia Torrencial", mult: 0.7, tipo: "evento"}, // Penalización 30%
+    {n: "Nevada Extrema", mult: 0.4, tipo: "evento"}  // Penalización 60%
+];
 
     function iniciarRelojClima() {
-        setInterval(() => {
-            let nuevoClima = Math.floor(Math.random() * climas.length);
-            db.ref('salas/' + sala + '/clima').set(nuevoClima);
-            log("¡El clima ha cambiado a " + climas[nuevoClima].n + "!");
-        }, 600000);
-    }
+    setInterval(() => {
+        let nuevoClima = Math.floor(Math.random() * climas.length);
+        db.ref('salas/' + sala + '/clima').set(nuevoClima);
+        log("📢 ALERTA: El clima ha cambiado a " + climas[nuevoClima].n);
+        
+        // Sincronizar anuncio para todos los jugadores
+        db.ref('salas/' + sala + '/anuncioClima').set(nuevoClima);
+    }, 600000); // 10 minutos
+}
+
+        function anunciarClima(idx) {
+    let clima = climas[idx];
+    let modal = document.getElementById('modal');
+    document.getElementById('modal-title').innerText = "🌦️ Pronóstico del Tiempo";
+    document.getElementById('modal-text').innerHTML = `<div class="weather-title">${clima.n}</div>` + 
+        (clima.tipo === "evento" ? "¡Atención! Debido al clima extremo, las ganancias de alquiler se redujeron." : "Un día tranquilo en Naeun Town.");
+    modal.className = "weather-alert"; // Aplicamos estilo CSS
+    modal.style.display = 'block';
+    
+    setTimeout(() => { modal.style.display = 'none'; modal.className = ""; }, 5000);
+}
 
     let alquilerPendiente = null;
     let turnosSeis = 0;
@@ -244,6 +263,7 @@
             let multClima = data.clima !== undefined ? climas[data.clima].mult : 1.0;
             
             document.getElementById('modal-title').innerText = "Tarjeta de Propiedad";
+            let multClima = (data.clima !== undefined) ? climas[data.clima].mult : 1.0;
             let porcentajes = [0.10, 0.15, 0.20, 0.30, 0.40, 0.50];
             let nivelesNombres = ["Base", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
             let listaAlquileres = "";
@@ -471,6 +491,10 @@
     
     function sincronizar() { 
         escucharOfertas();
+        db.ref('salas/' + sala + '/anuncioClima').on('value', snap => {
+    let cIdx = snap.val();
+    if (cIdx !== null) anunciarClima(cIdx);
+});
         db.ref('salas/' + sala).on('value', snap => { 
             let s = snap.val(); if(!s) return; 
             document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
