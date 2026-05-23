@@ -108,7 +108,7 @@
             </div>
         </div>
 
-        <div id="modal-mision-completada" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #fff; padding: 20px; border: 5px solid #ff80bf; border-radius: 20px; text-align: center; z-index: 2000; box-shadow: 0 0 20px rgba(0,0,0,0.3);">
+        <div id="modal-mision-completada" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #fff; padding: 20px; border: 5px solid #ff80bf; border-radius: 20px; text-align: center; z-index: 9999; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
     <h2 style="color: #ff59aa;">¡Misión Completada!</h2>
     <p id="mision-nombre" style="font-weight: bold;"></p>
     <p>¡Has recibido un bono de <b id="mision-premio"></b>!</p>
@@ -302,13 +302,20 @@ function pagarPenalidad() {
 }
 
         function premiarVendedor(vendedorIdx, misionId, titulo, premio) {
-    // 1. Marcar como cumplida en la base de datos
+    // 1. Marcar en Firebase
     db.ref('salas/' + sala + '/jugadores/' + vendedorIdx + '/misionesCumplidas/' + misionId).set(true);
     
-    // 2. Sumar el premio al dinero del vendedor
+    // 2. Sumar dinero
     db.ref('salas/' + sala + '/jugadores/' + vendedorIdx + '/dinero').transaction(d => d + premio);
     
-    // 3. Notificar en el log
+    // 3. LOGICA DE VISUALIZACIÓN:
+    // Si yo soy el vendedor, debo ver el modal
+    if (vendedorIdx === miIdx) {
+        document.getElementById('mision-nombre').innerText = titulo;
+        document.getElementById('mision-premio').innerText = "$" + premio;
+        document.getElementById('modal-mision-completada').style.display = 'block';
+    }
+    
     log("¡Misión completada: " + titulo + "! " + nombres[vendedorIdx] + " recibió $" + premio);
 }
 
