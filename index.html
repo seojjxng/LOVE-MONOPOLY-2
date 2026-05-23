@@ -953,63 +953,38 @@ function mostrarNotificacionMision(titulo) {
     }); 
 }                                                             
                                                                                                        
-    function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
-    function verSaldos() { db.ref('salas/' + sala + '/jugadores').once('value', snap => { let txt = ""; snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); document.getElementById('modal-title').innerText = "Saldos"; document.getElementById('modal-text').innerHTML = txt; document.getElementById('modal').style.display = 'block'; }); }
-    function enviarChat() { 
-    let input = document.getElementById('chat-msg');
-    let msg = input.value; 
-    if (msg.trim() === "") return; // No enviar si está vacío
-
-    // Obtenemos la hora actual (HH:MM)
-    let ahora = new Date();
-    let hora = ahora.getHours().toString().padStart(2, '0');
-    let minutos = ahora.getMinutes().toString().padStart(2, '0');
-    let marcaTiempo = hora + ":" + minutos;
-    
-    // Enviamos el mensaje con la hora (t)
-    db.ref('salas/' + sala + '/chat').push({ 
-        n: nombres[miIdx], 
-        m: msg,
-        t: marcaTiempo 
-    }); 
-    
-    input.value = ""; // Limpiar input
-}
-
-    function iniciarEscuchaOfertas() {
-    escucharOfertas(); 
-}
-        
-   V
-     
-    window.addEventListener('DOMContentLoaded', () => {
+   window.addEventListener('DOMContentLoaded', () => {
     console.log("Iniciando tablero...");
 
-    // 1. Dibujar tablero primero
-    mapa.forEach((m, i) => { 
-        const d = document.createElement('div'); 
-        d.className = 'cell'; 
-        d.id = 'cell-' + i; 
-        d.onclick = () => verPropiedad(i);
-        let g = obtenerGrupo(i);
-        d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
-                       ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}<div class="house-container"></div>`;
-        document.getElementById('board').appendChild(d); 
-    });
+    // 1. DIBUJAR TABLERO SIEMPRE (No depende de si la sala existe o no)
+    const boardElement = document.getElementById('board');
+    if (boardElement) {
+        mapa.forEach((m, i) => { 
+            const d = document.createElement('div'); 
+            d.className = 'cell'; 
+            d.id = 'cell-' + i; 
+            d.onclick = () => verPropiedad(i);
+            
+            let g = obtenerGrupo(i);
+            d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+                           ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}<div class="house-container"></div>`;
+            boardElement.appendChild(d); 
+        });
+    }
 
-    // 2. Verificar que la sala exista antes de sincronizar
-    db.ref('salas/' + sala).once('value', (snap) => {
-        if (!snap.exists()) {
-            console.warn("La sala no existe todavía. Esperando...");
-            return; // No ejecutamos sincronizar si la sala no existe
-        }
-        
-        // Ahora sí, arrancamos todo
-        sincronizar();
-        if (typeof escucharOfertas === 'function') {
-            escucharOfertas();
-        }
-    });
+    // 2. AHORA SÍ, sincronizamos datos solo si la sala existe
+    if (typeof sala !== 'undefined' && sala) {
+        db.ref('salas/' + sala).once('value', (snap) => {
+            if (snap.exists()) {
+                sincronizar();
+                if (typeof escucharOfertas === 'function') {
+                    escucharOfertas();
+                }
+            } else {
+                console.warn("Sala no creada, esperando...");
+            }
+        });
+    }
 });
 </script>
 </body>
