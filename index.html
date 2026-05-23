@@ -155,6 +155,11 @@
         }, 7000);
     </script>
 </div>
+    <div id="modal-inicio" style="display:none; position:fixed; top:20%; left:5%; width:90%; max-width:400px; background:white; padding:20px; border-radius:15px; border: 2px solid #ffccd5; z-index:1000; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+    <h3>¿Iniciar partida?</h3>
+    <p>Hay jugadores esperando. ¿Deseas comenzar ahora con los presentes?</p>
+    <button class="btn" onclick="iniciarJuegoConfirmado()" style="padding: 10px 20px; cursor: pointer;">¡Comenzar Partida!</button>
+</div>
 <audio id="musica-fondo" loop>
     <source src="https://dl.dropbox.com/scl/fi/5oxzgnxoe30zqd4m6hdfh/kawaii-playlist-for-snack-time-BGM-POP.mp3?rlkey=1lw76u3u1w1ck3dj2ej5x7ml7&st=y6j07iwx&dl=1" type="audio/mpeg">
 </audio>
@@ -338,6 +343,16 @@ function pagarPenalidad() {
     // Aseguramos que 'sala' sea una cadena limpia
     sala = inputSala.value.trim();
 
+    // --- PROTECCIÓN DE SEGURIDAD ---
+    // Verificamos si la partida ya empezó ANTES de intentar unir al jugador
+    db.ref('salas/' + sala + '/iniciada').once('value', snap => {
+        if (snap.val() === true) {
+            alert("La partida ya ha comenzado, no puedes entrar.");
+            location.reload(); // Recarga la página y saca al usuario
+            return;
+        }
+    });
+
     if (yaEntro) return;
     yaEntro = true;
     
@@ -361,7 +376,7 @@ function pagarPenalidad() {
             nombre: miNombre,
             tienePrestamo: false,
             montoPrestamo: 0,
-            online: true // <--- Marcamos que está presente
+            online: true // Marcamos que está presente
         }).then(() => {
             // 4. Configurar eventos de desconexión (cambiar a false si se va)
             jugadorRef.onDisconnect().update({ online: false });
@@ -371,7 +386,6 @@ function pagarPenalidad() {
 
             // 5. Lógica de inicio de sala
             if (miIdx === 0) {
-                db.ref('salas/' + sala + '/turno').set(0);
                 if (typeof iniciarRelojClima === 'function') iniciarRelojClima();
             }
 
@@ -383,6 +397,9 @@ function pagarPenalidad() {
             // 6. Iniciar sincronización
             sincronizar();
             
+            // 7. Esta función es la que revisa si eres el admin para mostrar el modal AL ENTRAR
+            verificarInicio(); 
+            
             if (typeof renderizarInterfaz === 'function') renderizarInterfaz();
 
         }).catch(error => {
@@ -392,6 +409,17 @@ function pagarPenalidad() {
         });
     });
 }
+        // Llamar a esto cuando se detecte que hay más de 1 jugador
+function mostrarBotonInicioSiEsAdmin() {
+    db.ref('salas/' + sala + '/iniciada').once('value', snap => {
+        // Solo mostramos si NO ha empezado y es el jugador 0
+        if (!snap.val() && miIdx === 0) {
+            document.getElementById('modal-inicio').style.display = 'block';
+        }
+    });
+}
+        
+        
         function obtenerAlquilerFerrocarril(dueñoIdx, todasLasPropiedades) {
     const indicesTransporte = [8, 24, 26, 27];
     let cantidad = 0;
@@ -406,6 +434,26 @@ function pagarPenalidad() {
     // Lógica de precios según cantidad
     const tabla = { 1: 100, 2: 150, 3: 250, 4: 300 };
     return tabla[cantidad] || 0;
+}
+
+
+        // 1. Cuando el jugador 0 se une, mostramos el aviso (o un botón)
+unction verificarInicio() {
+    db.ref('salas/' + sala + '/iniciada').once('value', snap => {
+        // Solo mostramos si NO ha empezado y es el jugador 0 (el admin)
+        if (!snap.val() && miIdx === 0) {
+            document.getElementById('modal-inicio').style.display = 'block';
+        }
+    });
+}
+
+// 2. Función que bloquea la sala y reparte el primer turno
+function iniciarJuegoConfirmado() {
+    db.ref('salas/' + sala).update({
+        iniciada: true,
+        turno: 0 // Asignamos el primer turno
+    });
+    document.getElementById('modal-inicio').style.display = 'none';
 }
         
         
@@ -1180,7 +1228,7 @@ function pasarTurno() {
     
     input.value = ""; // Limpiar input
 }
-    function sincronizar() {
+   function sincronizar() {
     escucharOfertas();
 
     db.ref('salas/' + sala + '/chat').on('value', snap => {
@@ -1199,6 +1247,12 @@ function pasarTurno() {
         let s = snap.val(); 
         if (!s || !s.jugadores) return;
 
+        // --- SEGURIDAD: Ocultar modal si la partida ya inició ---
+        if (s.iniciada === true) {
+            let modal = document.getElementById('modal-inicio');
+            if (modal) modal.style.display = 'none';
+        }
+
         // 1. Actualizar dinero solo si el jugador existe
         if (s.jugadores[miIdx]) {
             document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
@@ -1214,17 +1268,14 @@ function pasarTurno() {
         }
         
         // 3. DIBUJO INTELIGENTE: Solo mostrar los jugadores ONLINE
-        // Primero ocultamos todos los tokens (asegúrate de que tus elementos tengan una clase común o ID p0, p1, p2, p3)
         for(let i=0; i<4; i++){
             let el = document.getElementById('p' + i);
             if(el) el.style.display = 'none';
         }
 
-        // Dibujamos solo los que tienen online: true
         Object.keys(s.jugadores).forEach(i => {
             let j = s.jugadores[i];
             let el = document.getElementById('p' + i);
-            
             if (el && j.online === true) {
                 el.style.display = 'block';
                 let cell = document.getElementById('cell-' + j.pos);
@@ -1280,6 +1331,71 @@ function pasarTurno() {
                 mostrarNotificacionMision(mensajes[m]);
                 db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
             }
+        }
+    });
+
+    // Control automático para mostrar botón de inicio al admin
+    db.ref('salas/' + sala + '/jugadores').on('value', snap => {
+        let jugadores = snap.val();
+        if (!jugadores) return;
+        let numJugadores = Object.keys(jugadores).length;
+        
+        if (numJugadores > 1 && miIdx === 0) {
+            db.ref('salas/' + sala + '/iniciada').once('value', s => {
+                if (!s.val()) {
+                    document.getElementById('modal-inicio').style.display = 'block';
+                }
+            });
+        }
+    });
+}
+
+        // --- FUNCIONES PARA CONTROLAR EL INICIO DE LA PARTIDA ---
+
+// 1. Verifica si se debe mostrar el modal al administrador
+function verificarInicio() {
+    db.ref('salas/' + sala + '/iniciada').once('value', snap => {
+        // Solo mostramos si NO ha empezado y es el jugador 0 (el admin)
+        if (!snap.val() && miIdx === 0) {
+            document.getElementById('modal-inicio').style.display = 'block';
+        }
+    });
+}
+
+// 2. Función que bloquea la sala y reparte el primer turno
+function iniciarJuegoConfirmado() {
+    // Marcamos la partida como iniciada
+    db.ref('salas/' + sala).update({
+        iniciada: true,
+        turno: 0 // Inicia el jugador 0
+    });
+    
+    // Ocultamos el modal
+    document.getElementById('modal-inicio').style.display = 'none';
+    
+    // Avisamos a todos en el chat
+    db.ref('salas/' + sala + '/chat').push({
+        n: "Sistema",
+        m: "¡La partida ha comenzado!"
+    });
+}
+
+// 3. Listener que detecta cuándo hay jugadores suficientes para iniciar
+// Este código debe ir idealmente al final de tu función sincronizar
+function configurarListenerInicio() {
+    db.ref('salas/' + sala + '/jugadores').on('value', snap => {
+        let jugadores = snap.val();
+        if (!jugadores) return;
+        
+        let numJugadores = Object.keys(jugadores).length;
+        
+        // Si hay más de 1 jugador y soy el admin, verificar si mostrar el modal
+        if (numJugadores > 1 && miIdx === 0) {
+            db.ref('salas/' + sala + '/iniciada').once('value', s => {
+                if (!s.val()) {
+                    document.getElementById('modal-inicio').style.display = 'block';
+                }
+            });
         }
     });
 }
