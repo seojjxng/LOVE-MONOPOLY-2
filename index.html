@@ -977,52 +977,44 @@ function verPropiedad(pos, esCaida = false) {
 }
 
         function pasarTurno() {
-    // 1. Resetear el contador de seis si existe
+    // 1. Resetear contador de seis seguidos
     if (typeof turnosSeis !== 'undefined') turnosSeis = 0;
 
-    // 2. Obtener los jugadores reales conectados en la base de datos
+    // 2. Obtener SOLO los jugadores que tienen datos en la sala
     db.ref('salas/' + sala + '/jugadores').once('value', snap => {
-        let jugadores = snap.val();
-        if (!jugadores) return;
-        
-        // Creamos una lista con los índices de los jugadores que realmente existen
-        let indicesJugadores = [];
-        for (let i in jugadores) {
-            indicesJugadores.push(Number(i));
-        }
-        
-        let total = indicesJugadores.length;
-        if (total === 0) return;
+        const jugadoresData = snap.val();
+        if (!jugadoresData) return;
 
+        // Convertimos las claves de Firebase (0, 1, 2, 3...) a un array de números
+        let indicesPresentes = Object.keys(jugadoresData).map(Number);
+        
         // 3. Obtener el turno actual
         db.ref('salas/' + sala + '/turno').once('value', tSnap => {
-            let t = Number(tSnap.val());
+            let turnoActual = Number(tSnap.val());
+
+            // 4. Calcular el siguiente jugador en la lista de presentes
+            let idxActualEnLista = indicesPresentes.indexOf(turnoActual);
             
-            // Buscar la posición actual en nuestro array de jugadores presentes
-            let idxEnArray = indicesJugadores.indexOf(t);
+            // Si el jugador actual no está (o es el último), pasamos al primero de la lista
+            let siguienteIdx = (idxActualEnLista + 1) % indicesPresentes.length;
+            let nuevoTurno = indicesPresentes[siguienteIdx];
+
+            // 5. Verificar si el nuevo jugador está en la cárcel
+            let jugadorSiguiente = jugadoresData[nuevoTurno];
             
-            // Si el jugador actual no está en la lista (por ejemplo, se salió), empezamos por el primero
-            if (idxEnArray === -1) idxEnArray = 0;
-            
-            // Calcular el siguiente índice dentro de los jugadores presentes
-            let siguienteIdxEnArray = (idxEnArray + 1) % total;
-            let nuevoTurno = indicesJugadores[siguienteIdxEnArray];
-            
-            // 4. Lógica de cárcel: Si el siguiente está en la cárcel, saltar
-            db.ref('salas/' + sala + '/jugadores/' + nuevoTurno).once('value', jSnap => {
-                let jugador = jSnap.val();
-                if (jugador && jugador.enCarcel > 0) {
-                    log(nombres[nuevoTurno] + " está en la cárcel.");
-                    db.ref('salas/' + sala + '/jugadores/' + nuevoTurno).update({ enCarcel: jugador.enCarcel - 1 });
-                    
-                    // Saltar al siguiente del siguiente jugador presente
-                    let saltadoIdxEnArray = (siguienteIdxEnArray + 1) % total;
-                    db.ref('salas/' + sala + '/turno').set(indicesJugadores[saltadoIdxEnArray]);
-                } else {
-                    // Pasa el turno normalmente al siguiente jugador presente
-                    db.ref('salas/' + sala + '/turno').set(nuevoTurno);
-                }
-            });
+            if (jugadorSiguiente && jugadorSiguiente.enCarcel > 0) {
+                log(nombres[nuevoTurno] + " está en la cárcel.");
+                db.ref('salas/' + sala + '/jugadores/' + nuevoTurno)
+                  .update({ enCarcel: jugadorSiguiente.enCarcel - 1 });
+                
+                // Si está en la cárcel, volvemos a llamar a pasarTurno para saltar al siguiente
+                // O forzamos el salto al siguiente de la lista
+                let turnoTrasCárcel = (siguienteIdx + 1) % indicesPresentes.length;
+                db.ref('salas/' + sala + '/turno').set(indicesPresentes[turnoTrasCárcel]);
+            } else {
+                // Paso de turno normal
+                db.ref('salas/' + sala + '/turno').set(nuevoTurno);
+            }
         });
     });
 }
