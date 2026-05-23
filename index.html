@@ -333,22 +333,26 @@ function pagarPenalidad() {
 }
     
     function unirse() {
-    // 1. Obtener ID de sala desde el input
+    // 1. Obtener ID de sala: Prioridad a la sala guardada (reconexión), si no, al input
+    let salaGuardada = sessionStorage.getItem('salaActual');
     let inputSala = document.getElementById('sala-id');
-    if (!inputSala || !inputSala.value) {
+    
+    if (salaGuardada) {
+        sala = salaGuardada;
+    } else if (inputSala && inputSala.value) {
+        sala = inputSala.value.trim();
+    } else {
         alert("Por favor, ingresa un ID de sala.");
         return;
     }
-    
-    // Aseguramos que 'sala' sea una cadena limpia
-    sala = inputSala.value.trim();
 
     // --- PROTECCIÓN DE SEGURIDAD ---
     // Verificamos si la partida ya empezó ANTES de intentar unir al jugador
     db.ref('salas/' + sala + '/iniciada').once('value', snap => {
         if (snap.val() === true) {
             alert("La partida ya ha comenzado, no puedes entrar.");
-            location.reload(); // Recarga la página y saca al usuario
+            sessionStorage.removeItem('salaActual'); // Limpiamos por si acaso
+            location.reload(); 
             return;
         }
     });
@@ -363,12 +367,10 @@ function pagarPenalidad() {
     db.ref('salas/' + sala + '/jugadores').once('value', snap => {
         miIdx = snap.numChildren();
         
-        // Proteccion: Si no existe el nombre, usamos "Jugador " + miIdx
         let miNombre = (typeof nombres !== 'undefined' && nombres[miIdx]) ? nombres[miIdx] : ("Jugador " + (miIdx + 1));
-        
         let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
         
-        // 3. Crear el jugador y marcarlo como ONLINE
+        // 3. Crear el jugador
         jugadorRef.set({
             pos: 0,
             dinero: 1000,
@@ -376,17 +378,19 @@ function pagarPenalidad() {
             nombre: miNombre,
             tienePrestamo: false,
             montoPrestamo: 0,
-            online: true // Marcamos que está presente
+            online: true 
         }).then(() => {
-            // 4. Configurar eventos de desconexión (cambiar a false si se va)
+            // Guardamos la sala para futuras reconexiones
+            sessionStorage.setItem('salaActual', sala);
+
+            // 4. Eventos de desconexión
             jugadorRef.onDisconnect().update({ online: false });
-            
             let mensajeRef = db.ref('salas/' + sala + '/chat').push(); 
             mensajeRef.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
 
-            // 5. Lógica de inicio de sala
-            if (miIdx === 0) {
-                if (typeof iniciarRelojClima === 'function') iniciarRelojClima();
+            // 5. Lógica de inicio
+            if (miIdx === 0 && typeof iniciarRelojClima === 'function') {
+                iniciarRelojClima();
             }
 
             db.ref('salas/' + sala + '/chat').push({
@@ -394,10 +398,8 @@ function pagarPenalidad() {
                 m: miNombre + " ha entrado a la sala."
             });
 
-            // 6. Iniciar sincronización
+            // 6. Sincronización y Control de Inicio
             sincronizar();
-            
-            // 7. Esta función es la que revisa si eres el admin para mostrar el modal AL ENTRAR
             verificarInicio(); 
             
             if (typeof renderizarInterfaz === 'function') renderizarInterfaz();
