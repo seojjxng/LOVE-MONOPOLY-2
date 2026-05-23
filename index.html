@@ -356,7 +356,9 @@ function pagarPenalidad() {
 
         // 2. Uso de Transacción para obtener un índice único
         db.ref('salas/' + sala + '/jugadores').transaction(jugadores => {
-            if (jugadores === null) return { 0: { /* datos iniciales */ } }; // Si no existen jugadores
+            if (jugadores === null) {
+                jugadores = {};
+            }
             
             // Si el jugador ya entró, abortar para no duplicar
             if (yaEntro) return; 
@@ -382,17 +384,17 @@ function pagarPenalidad() {
                 let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
                 jugadorRef.onDisconnect().update({ online: false });
                 
-                db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: miNombre + " ha entrado." });
+                db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: "Jugador " + (miIdx + 1) + " ha entrado." });
                 
                 sincronizar();
                 verificarInicio();
                 if (typeof renderizarInterfaz === 'function') renderizarInterfaz();
-            } else {
-                alert("Error al intentar unirse. Inténtalo de nuevo.");
-            });
+            } else if (error) {
+                alert("Error al intentar unirse: " + error);
+            }
+        });
     });
 }
-
 
         function renderizarInterfaz() {
     const contenedor = document.getElementById('contenedor-configuracion');
@@ -1441,34 +1443,7 @@ document.getElementById('chat-msg').addEventListener('keypress', function (e) {
      
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. Renderizar el tablero
-    const board = document.getElementById('board');
-    if (board) {
-        board.innerHTML = ""; // Limpiar para evitar duplicados
-        mapa.forEach((m, i) => { 
-            const d = document.createElement('div'); 
-            d.className = 'cell'; 
-            d.id = 'cell-' + i; 
-            d.onclick = () => verPropiedad(i);
-            
-            let g = obtenerGrupo(i);
-            
-            if (g && g.color === "#f5f5dc") {
-                d.style.border = "3px solid #f5f5dc"; 
-                d.style.backgroundColor = "#fffef0";
-            } else if (g) {
-                d.innerHTML = `<div class="strip" style="background: ${g.color}"></div>`;
-            }
-            
-            d.innerHTML += `<div class="contenido" style="font-size: 7px; color: #c71585;">
-                                ${m.n}<br>
-                                ${m.p > 0 ? '$' + m.p : ''}
-                            </div>`;
-            board.appendChild(d);
-        });
-    }
-
-    // 2. Reconexión automática
+    renderizarTablero();
     if (sessionStorage.getItem('salaActual')) {
         unirse();
     }
