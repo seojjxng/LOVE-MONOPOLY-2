@@ -569,7 +569,7 @@ function pagarPenalidad() {
         let s = snap.val(); 
         if(s.turno !== miIdx || s.jugadores[miIdx].enCarcel > 0) return;
         
-        // 1. Lógica de clima
+        // 1. Clima
         if (s.clima === undefined) {
             let climaInicial = Math.floor(Math.random() * climas.length);
             db.ref('salas/' + sala + '/clima').set(climaInicial);
@@ -578,14 +578,13 @@ function pagarPenalidad() {
             log(mensaje);
         }
 
-        // 2. Cálculo del dado y contador de seises
+        // 2. Dado
         let dado = Math.floor(Math.random() * 6) + 1;
         document.getElementById('dado-valor').innerText = dado;
-        
         let contadorActual = s.jugadores[miIdx].seisSeguidos || 0;
         let nuevoContador = (dado === 6) ? contadorActual + 1 : 0;
 
-        // 3. Movimiento
+        // 3. Movimiento lógico
         let posActual = Number(s.jugadores[miIdx].pos);
         let nuevaPos = (posActual + dado) % mapa.length;
         
@@ -594,18 +593,19 @@ function pagarPenalidad() {
             log(nombres[miIdx] + " pasó por SALIDA y cobró $200."); 
         }
 
-        // 4. Lógica de Penalización (3 seises) vs Turno Extra vs Turno Normal
+        // 4. Lógica de Penalización o Movimiento
         if (nuevoContador === 3) {
             log("¡ACUSACIÓN DE FRAUDE! " + nombres[miIdx] + " sacó tres 6 seguidos.");
             db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
-                pos: 8, // Ajusta a tu índice de cárcel
+                pos: 8, 
                 enCarcel: 2, 
                 seisSeguidos: 0 
             });
-            gestionarFraude(); // Función que abre el modal de penalidad
+            gestionarFraude();
             pasarTurno();
+            // Si va a la cárcel por fraude, procesamos la casilla 8
+            setTimeout(() => manejarCasilla(8), 600); 
         } else {
-            // Actualizamos posición y contador
             db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
                 pos: nuevaPos, 
                 seisSeguidos: nuevoContador 
@@ -613,17 +613,14 @@ function pagarPenalidad() {
 
             if (dado === 6) {
                 log("¡Sacaste un 6! Tienes turno extra.");
-                // No pasamos turno, el jugador vuelve a tirar
             } else {
                 pasarTurno();
             }
+            // Procesamos la casilla normal a la que llegó
+            setTimeout(() => manejarCasilla(nuevaPos), 600);
         }
-        
-        // Ejecutar efectos de la casilla final
-        setTimeout(() => manejarCasilla(nuevaPos), 600);
     }); 
 }
-
         // Lógica de penalización
         if (seisSeguidos === 3) {
             log("¡ACUSACIÓN DE FRAUDE! " + nombres[miIdx] + " sacó tres 6 seguidos.");
