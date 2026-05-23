@@ -314,18 +314,39 @@
         ejecutarEvento(p.n); 
         return; 
     }
+
+
+        if (p.n === "PARADA") {
+        db.ref('salas/' + sala + '/impuestosAcumulados').once('value', snap => {
+            let acumulado = snap.val() || 0;
+            if (acumulado > 0) {
+                db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => d + acumulado);
+                log(nombres[miIdx] + " llegó a la PARADA y cobró $" + acumulado + " de impuestos acumulados.");
+                db.ref('salas/' + sala + '/impuestosAcumulados').set(0); // Reiniciar bolsa
+            } else {
+                log(nombres[miIdx] + " llegó a la PARADA, pero no había impuestos acumulados.");
+            }
+        });
+        return;
+    }
+        
         if (p.n === "IMPUESTOS") {
             db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => {
                 let nuevo = Number(d) - 100;
                 setTimeout(() => verificarBancarrota(miIdx, nuevo), 500);
                 return nuevo;
             });
+            
+            // AGREGA ESTA LÍNEA PARA ACUMULAR EL DINERO:
+            db.ref('salas/' + sala + '/impuestosAcumulados').transaction(a => (a || 0) + 100);
+            
             log(nombres[miIdx] + " pagó impuestos de $100.");
             document.getElementById('modal-title').innerText = "Impuestos";
             document.getElementById('modal-text').innerText = "Pagaste $100.";
             document.getElementById('modal-extra').innerHTML = "";
             document.getElementById('modal').style.display = 'block';
             return;
+            
         }
         verPropiedad(pos, true);
     }
