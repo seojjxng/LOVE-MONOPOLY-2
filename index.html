@@ -534,7 +534,7 @@ window.onload = crearCasillasDOM;
 });
         db.ref('salas/' + sala).on('value', snap => { 
             let s = snap.val(); if(!s) return; 
-            document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
+            document.getElementById('dinero-mio').innerText = (s.jugadores[miIdx]?.dinero || 0)
             document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
             if(s.clima !== undefined) { 
     let c = climas[s.clima]; 
