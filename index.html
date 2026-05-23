@@ -1231,6 +1231,7 @@ function pasarTurno() {
    function sincronizar() {
     escucharOfertas();
 
+    // Listener del Chat
     db.ref('salas/' + sala + '/chat').on('value', snap => {
         let chatLog = document.getElementById('chat-log');
         if (!chatLog) return;
@@ -1243,6 +1244,7 @@ function pasarTurno() {
         chatLog.scrollTop = chatLog.scrollHeight;
     });
 
+    // Listener principal de la Sala
     db.ref('salas/' + sala).on('value', snap => {
         let s = snap.val(); 
         if (!s || !s.jugadores) return;
@@ -1253,12 +1255,12 @@ function pasarTurno() {
             if (modal) modal.style.display = 'none';
         }
 
-        // 1. Actualizar dinero solo si el jugador existe
+        // 1. Actualizar dinero
         if (s.jugadores[miIdx]) {
             document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
         }
         
-        // 2. CORRECCIÓN TURNO: Usar el nombre guardado en la BD
+        // 2. Turno
         let jugadorTurno = s.jugadores[s.turno];
         document.getElementById('turno-text').innerText = "Turno: " + (jugadorTurno ? jugadorTurno.nombre : "Esperando...");
 
@@ -1267,7 +1269,7 @@ function pasarTurno() {
             document.getElementById('clima-display').innerText = "Estación: " + c.n; 
         }
         
-        // 3. DIBUJO INTELIGENTE: Solo mostrar los jugadores ONLINE
+        // 3. Dibujo jugadores ONLINE
         for(let i=0; i<4; i++){
             let el = document.getElementById('p' + i);
             if(el) el.style.display = 'none';
@@ -1290,15 +1292,12 @@ function pasarTurno() {
         if (s.propiedades) {
             const es2vs2 = s.modo === '2vs2';
             const coloresEquipos = { 'A': '#ffb7b2', 'B': '#b2f2bb' };
-
             Object.keys(s.propiedades).forEach(pos => {
                 let cell = document.getElementById('cell-' + pos);
                 if (cell) {
                     let owner = s.propiedades[pos].owner;
                     let colorFinal = es2vs2 ? coloresEquipos[(owner === 0 || owner === 1) ? 'A' : 'B'] : colores[owner];
-                    
                     cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colorFinal;
-                    
                     let hc = cell.querySelector('.house-container'); 
                     if(hc) {
                         hc.innerHTML = "";
@@ -1316,6 +1315,7 @@ function pasarTurno() {
             verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
         }
 
+        // 5. Notificaciones de Misiones
         if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
             let m = s.jugadores[miIdx].ultimaMision;
             const mensajes = {
@@ -1333,6 +1333,22 @@ function pasarTurno() {
             }
         }
     });
+
+    // --- NUEVO: Listener para que el Admin vea el botón de inicio ---
+    db.ref('salas/' + sala + '/jugadores').on('value', snap => {
+        let jugadores = snap.val();
+        if (!jugadores) return;
+        let numJugadores = Object.keys(jugadores).length;
+        
+        if (numJugadores > 1 && miIdx === 0) {
+            db.ref('salas/' + sala + '/iniciada').once('value', s => {
+                if (!s.val()) {
+                    document.getElementById('modal-inicio').style.display = 'block';
+                }
+            });
+        }
+    });
+}
 
     // Control automático para mostrar botón de inicio al admin
     db.ref('salas/' + sala + '/jugadores').on('value', snap => {
