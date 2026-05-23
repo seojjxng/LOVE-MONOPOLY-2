@@ -316,7 +316,7 @@ function pagarPenalidad() {
             jugadorRef.onDisconnect().remove();
             
             let mensajeRef = db.ref('salas/' + sala + '/chat').push(); 
-mensajeRef.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " ha abandonado." });
+            mensajeRef.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " ha abandonado." });
 
             // 5. Lógica de inicio de sala
             if (miIdx === 0) {
@@ -331,6 +331,11 @@ mensajeRef.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " ha abandonad
 
             // 6. Iniciar sincronización
             sincronizar();
+            
+            // --- NUEVA LÍNEA AÑADIDA AQUÍ ---
+            // Esto dibujará el botón de configuración si eres el jugador 0
+            if (typeof renderizarInterfaz === 'function') renderizarInterfaz();
+
         }).catch(error => {
             console.error("Error al unirse a la sala:", error);
             yaEntro = false;
@@ -338,7 +343,6 @@ mensajeRef.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " ha abandonad
         });
     });
 }
-
 
         function obtenerAlquilerFerrocarril(dueñoIdx, todasLasPropiedades) {
     const indicesTransporte = [8, 24, 26, 27];
