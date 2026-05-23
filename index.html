@@ -279,14 +279,14 @@ function pagarPenalidad() {
         lista.innerHTML = ""; // Limpiar lista anterior
 
         const misiones = [
-            { id: 'inversorInicial', titulo: 'Inversor Inicial. Poseer al menos 3 propiedades de cualquier tipo.', rec: 200 },
-            { id: 'coleccionista', titulo: 'El coleccionista. Ser el primero en completar cualquier set de color.', rec: 300 },
-            { id: 'negociador', titulo: 'El negociador. Por realizar tu primer intercambio exitoso con otro jugador.', rec: 400 },
-            { id: 'cajafuerte', titulo: 'Caja fuerte. Acumular un total de $2,000 en efectivo en tu inventario.', rec: 650 },
-            { id: 'renovador', titulo: 'Renovador. Construir un total de 5 casas en tus propiedades.', rec: 500 },
-            { id: 'monopolio', titulo: 'Monopolio total. Ser dueño de los 3 sets más caros del tablero', rec: 1500 },
-            { id: 'intocable', titulo: 'El intocable. Lograr que otro jugador caiga en tus propiedades 5 veces sin declararte en bancarrota.', rec: 400}
-            ];
+    { id: 'inversorInicial', titulo: 'Inversor Inicial. Poseer al menos 3 propiedades.', rec: 200 },
+    { id: 'coleccionista', titulo: 'El coleccionista. Completar cualquier set de color.', rec: 300 },
+    { id: 'negociador', titulo: 'El negociador. Por realizar tu primer intercambio exitoso.', rec: 400 },
+    { id: 'cajafuerte', titulo: 'Caja fuerte. Acumular $2,000 en efectivo.', rec: 650 },
+    { id: 'renovador', titulo: 'Renovador. Construir un total de 5 casas.', rec: 500 },
+    { id: 'monopolioTotal', titulo: 'Monopolio total. Ser dueño de los 3 sets más caros.', rec: 1500 },
+    { id: 'intocable', titulo: 'El intocable. Otros jugadores caen 5 veces en tus propiedades.', rec: 400 }
+];
 
         misiones.forEach(m => {
             let item = document.createElement('li');
@@ -318,6 +318,143 @@ function mostrarNotificacionMision(titulo) {
             log(nombres[jugadorIdx] + " completó la misión: El negociador.");
         }
     });
+}
+
+        function verificarMisionInversor(jugadorIdx) {
+    db.ref('salas/' + sala).once('value', snap => {
+        let data = snap.val();
+        if (!data.propiedades) return;
+
+        // Contamos cuántas propiedades tienen como owner al jugador actual
+        let totalPropiedades = Object.values(data.propiedades).filter(p => p.owner === jugadorIdx).length;
+
+        if (totalPropiedades >= 3) {
+            db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/inversorInicial').once('value', snap => {
+                if (!snap.val()) { // Solo si no la ha cumplido antes
+                    // 1. Marcar como cumplida en BD
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/inversorInicial').set(true);
+                    
+                    // 2. Entregar recompensa
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/dinero').transaction(d => d + 200);
+                    
+                    // 3. Registrar el logro para que sincronizar() lo detecte
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/ultimaMision').set("inversor");
+                    
+                    log(nombres[jugadorIdx] + " completó la misión: Inversor Inicial.");
+                }
+            });
+        }
+    });
+}
+
+        function verificarMisionColeccionista(jugadorIdx) {
+    db.ref('salas/' + sala).once('value', snap => {
+        let data = snap.val();
+        if (!data.propiedades) return;
+
+        // Revisamos cada grupo de color definido en tu array 'grupos'
+        let tieneSetCompleto = grupos.some(g => {
+            return g.indices.every(idx => 
+                data.propiedades[idx] && data.propiedades[idx].owner === jugadorIdx
+            );
+        });
+
+        if (tieneSetCompleto) {
+            db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/coleccionista').once('value', snap => {
+                if (!snap.val()) { // Si no la ha cumplido aún
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/coleccionista').set(true);
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/dinero').transaction(d => d + 300);
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/ultimaMision').set("coleccionista");
+                    log(nombres[jugadorIdx] + " completó la misión: El coleccionista.");
+                }
+            });
+        }
+    });
+}
+
+        function verificarMisionMonopolioTotal(jugadorIdx) {
+    db.ref('salas/' + sala + '/propiedades').once('value', snap => {
+        let propiedades = snap.val();
+        if (!propiedades) return;
+
+        // Debes definir aquí los IDs de los grupos más caros (ejemplo: grupos 6, 7 y 8)
+        // Ajusta los números según tu array de 'grupos'
+        const setsMasCaros = [6, 7, 8]; 
+
+        let tieneTodosLosSets = setsMasCaros.every(grupoIdx => {
+            return grupos[grupoIdx].indices.every(pIdx => 
+                propiedades[pIdx] && propiedades[pIdx].owner === jugadorIdx
+            );
+        });
+
+        if (tieneTodosLosSets) {
+            db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/monopolioTotal').once('value', snap => {
+                if (!snap.val()) { // Solo si no se ha reclamado
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/monopolioTotal').set(true);
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/dinero').transaction(d => d + 1500);
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/ultimaMision').set("monopolioTotal");
+                    
+                    log(nombres[jugadorIdx] + " completó la misión: ¡Monopolio Total!");
+                }
+            });
+        }
+    });
+}
+
+        function verificarMisionRenovador(jugadorIdx) {
+    db.ref('salas/' + sala + '/propiedades').once('value', snap => {
+        let propiedades = snap.val();
+        if (!propiedades) return;
+
+        // Sumamos el nivel de todas las propiedades del jugador
+        let totalCasas = Object.values(propiedades)
+            .filter(p => p.owner === jugadorIdx)
+            .reduce((sum, p) => sum + (p.nivel || 0), 0);
+
+        if (totalCasas >= 5) {
+            db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/renovador').once('value', snap => {
+                if (!snap.val()) { // Solo si no la ha cumplido
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/renovador').set(true);
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/dinero').transaction(d => d + 500);
+                    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/ultimaMision').set("renovador");
+                    
+                    log(nombres[jugadorIdx] + " completó la misión: Renovador.");
+                }
+            });
+        }
+    });
+}
+
+        function verificarMisionCajaFuerte(jugadorIdx, saldoActual) {
+    if (saldoActual >= 2000) {
+        db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/cajafuerte').once('value', snap => {
+            if (!snap.val()) { // Si aún no ha reclamado el premio
+                // 1. Marcar misión como completada
+                db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/cajafuerte').set(true);
+                
+                // 2. Entregar el premio
+                db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/dinero').transaction(d => d + 650);
+                
+                // 3. Registrar el logro
+                db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/ultimaMision').set("cajafuerte");
+                
+                log(nombres[jugadorIdx] + " completó la misión: Caja fuerte.");
+            }
+        });
+    }
+}
+
+        // Dentro de tu función sincronizar, donde escuchas el estado de la sala:
+if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
+    let m = s.jugadores[miIdx].ultimaMision;
+
+    // ... (tus otros casos como "negociador", "inversor", etc.)
+
+    if (m === "intocable") {
+        mostrarNotificacionMision("¡El Intocable! Otros jugadores han caído 5 veces en tus propiedades. ¡Has ganado $400!");
+        // Limpiamos el aviso
+        db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
+    }
 }
         
     function verificarBancarrota(jugadorIdx, saldo) {
@@ -388,8 +525,24 @@ function mostrarNotificacionMision(titulo) {
             });
 
 
-            // Solo llamamos a la función para o.de (el vendedor)
-        verificarMisionNegociador(o.de);
+           // 1. Misiones de Propiedades
+        verificarMisionInversor(miIdx);
+        verificarMisionColeccionista(miIdx);
+        verificarMisionMonopolioTotal(miIdx);
+        verificarMisionRenovador(miIdx);
+
+            // 2. Misión de Efectivo
+        // Al recibir una propiedad, el dinero de miIdx cambió (o el del vendedor), 
+        // por lo que verificamos si alcanzó el límite.
+        db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').once('value', s => {
+            verificarMisionCajaFuerte(miIdx, s.val());
+        });
+
+        // 3. Misión de Interacción (Negociador)
+        // Usamos o.de, que es donde guardaste el ID del vendedor al crear la oferta
+        let vendedorIdx = o.de; 
+        verificarMisionNegociador(vendedorIdx);
+        
             
             db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
             log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
@@ -567,7 +720,26 @@ function mostrarNotificacionMision(titulo) {
         document.getElementById('modal').style.display = 'none';
     }
 
-    function comprar(pos) { log(nombres[miIdx] + " compró " + mapa[pos].n); db.ref('salas/' + sala + '/propiedades/' + pos).set({owner: miIdx, nivel: 0, hipotecada: false}); db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => Number(d) - Number(mapa[pos].p)); document.getElementById('modal').style.display = 'none'; }
+    function comprar(pos) { 
+    log(nombres[miIdx] + " compró " + mapa[pos].n); 
+    db.ref('salas/' + sala + '/propiedades/' + pos).set({owner: miIdx, nivel: 0, hipotecada: false}); 
+    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => Number(d) - Number(mapa[pos].p)); 
+    
+    // --- LLAMADAS A LAS MISIONES ---
+    // Verificamos si con esta compra llegó a 3 propiedades
+    verificarMisionInversor(miIdx);
+    
+    // Verificamos si con esta compra completó algún set de colores
+    verificarMisionColeccionista(miIdx);
+    
+    // Verificamos si completó los sets más caros
+    verificarMisionMonopolioTotal(miIdx);
+
+        // El jugador que realiza la acción es siempre miIdx
+    verificarMisionMonopolioTotal(miIdx);
+    
+    document.getElementById('modal').style.display = 'none'; 
+}
     function mejorar(pos) {
     db.ref('salas/' + sala).once('value', snap => {
         let data = snap.val();
@@ -690,20 +862,34 @@ function mostrarNotificacionMision(titulo) {
                     else if(nivel === 5) { let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); }
                 }
             }); }
-            if(s.chat) { let h = ""; Object.values(s.chat).forEach(c => h += "<b>"+c.n+":</b> "+c.m+"<br>"); document.getElementById('chat-log').innerHTML = h; }
             if(s.log) { let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); document.getElementById('log').innerHTML = h; }
 
-
-            if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
-            let m = s.jugadores[miIdx].ultimaMision;
-            if (m === "negociador") {
-                mostrarNotificacionMision("¡Has ganado $400 por tu primer intercambio!");
-                // Limpiar el aviso en Firebase para que no se repita en la siguiente sincronización
-                db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
+            // 1. Verificación automática de la misión "Caja Fuerte" (se ejecuta siempre)
+            if (s.jugadores[miIdx]) {
+                verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
             }
-        }
-            
-        }); 
+
+            // 2. Bloque de Notificaciones (Detecta si CUALQUIER misión acaba de cumplirse)
+            if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
+                let m = s.jugadores[miIdx].ultimaMision;
+
+                const mensajes = {
+                    "negociador": "¡Has ganado $400 por tu primer intercambio!",
+                    "inversor": "¡Felicidades! Has ganado $200 por ser un Inversor Inicial.",
+                    "coleccionista": "¡Felicidades! Has ganado $300 por completar un set de color.",
+                    "cajafuerte": "¡Felicidades! Has acumulado $2,000. ¡Un premio de $650 irá directo a tu caja fuerte!",
+                    "intocable": "¡El Intocable! Otros jugadores han caído 5 veces en tus propiedades. ¡Has ganado $400!",
+                    "renovador": "¡Excelente constructor! Has construido 5 casas en total. ¡Has ganado $500!",
+                    "monopolioTotal": "¡INCREÍBLE! Has conseguido el Monopolio Total. ¡Premio de $1,500!"
+};
+
+                if (mensajes[m]) {
+                    mostrarNotificacionMision(mensajes[m]);
+                    // Limpiamos el aviso para que no se repita
+                    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
+                }
+            }
+        }); // Este es el cierre correcto del .on('value')
     }
 
     mapa.forEach((m, i) => { 
