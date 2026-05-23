@@ -18,7 +18,33 @@
         .house { width: 8px; height: 8px; background: #ff59aa; }
         .hotel { width: 20px; height: 8px; background: #c71585; }
         .token { width: 25px; height: 25px; position: absolute; z-index: 10; transition: all 0.5s ease; pointer-events: none; }
-        
+        #modal-misiones { 
+    display: none; 
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    width: 350px; 
+    background: #ffe4e9; 
+    padding: 20px; 
+    border: 3px solid #ff80bf; 
+    border-radius: 15px; 
+    text-align: center; 
+    z-index: 1000; 
+}
+#lista-misiones { 
+    list-style: none; 
+    padding: 0; 
+    text-align: left; 
+    max-height: 300px; 
+    overflow-y: auto; 
+    font-size: 12px;
+}
+#lista-misiones li { 
+    margin-bottom: 8px; 
+    border-bottom: 1px solid #ffccd5; 
+    padding-bottom: 5px; 
+}
         /* Zona central ajustada */
         .center-zone { grid-column: 3 / 7; grid-row: 3 / 7; background: #fff5f7; border: 3px dashed #ff80bf; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
         
@@ -53,17 +79,26 @@
                 <img src="https://i.imgur.com/Nsafzb4.png" style="width:60px; cursor:pointer" onclick="tirarDado()">
                 <div>💖 $<span id="dinero-mio">1000</span></div>
                 <div style="font-size: 8px; margin-top: 5px;">Monto de impuestos actuales: $<span id="monto-impuestos">0</span></div>
-                <button id="btn-misiones" onclick="abrirModalMisiones()">Ver Misiones</button>
-</div>
-            <div id="modal-misiones" class="modal" style="display:none;">
-    <div class="modal-content">
-        <h3>Misiones Disponibles</h3>
-        <ul id="lista-misiones"></ul>
-        <button onclick="document.getElementById('modal-misiones').style.display='none'">Cerrar</button>
-    </div>
+                <button class="btn" onclick="abrirModalMisiones()">Ver Misiones</button>
 </div>
             </div>
         </div>
+        <div id="modal">
+        <h3 id="modal-title"></h3>
+        <div id="modal-text"></div>
+        <div id="modal-extra"></div>
+        <button class="btn" id="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+    </div>
+
+
+        <div id="modal-misiones" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:300px; background:#ffe4e9; padding:20px; border:3px solid #ff80bf; border-radius:15px; text-align:center; z-index:999;">
+        <div class="modal-content">
+            <h3>Misiones Disponibles</h3>
+            <ul id="lista-misiones" style="text-align:left; font-size:12px; padding:0; list-style:none;"></ul>
+            <button class="btn" onclick="document.getElementById('modal-misiones').style.display='none'">Cerrar</button>
+        </div>
+    </div>
+        
         <div id="banco-container">
             <button class="btn" style="width: 140px" onclick="abrirBanco()">🏦 Banco</button>
             <button class="btn" style="width: 140px" onclick="pagarPrestamo()">💳 Pagar Préstamo</button>
