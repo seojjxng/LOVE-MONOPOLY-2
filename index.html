@@ -388,9 +388,8 @@ function mostrarNotificacionMision(titulo) {
             });
 
 
-            // Llamada para el vendedor (o.de) y para el comprador (miIdx)
-verificarMisionNegociador(o.de); 
-verificarMisionNegociador(miIdx);
+            // Solo llamamos a la función para o.de (el vendedor)
+        verificarMisionNegociador(o.de);
             
             db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
             log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
