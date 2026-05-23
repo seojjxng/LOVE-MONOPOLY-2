@@ -566,37 +566,58 @@ function mostrarNotificacionMision(titulo) {
 }
 
     function abrirIntercambio() {
-        db.ref('salas/' + sala).once('value', snap => {
-            let data = snap.val();
-            let misProps = [];
-            if(data.propiedades) {
-                Object.keys(data.propiedades).forEach(pIdx => {
-                    if(data.propiedades[pIdx].owner === miIdx) misProps.push(pIdx);
+    db.ref('salas/' + sala).once('value', snap => {
+        let data = snap.val();
+        let misProps = [];
+        if(data.propiedades) {
+            Object.keys(data.propiedades).forEach(pIdx => {
+                if(data.propiedades[pIdx].owner === miIdx) misProps.push(pIdx);
+            });
+        }
+        document.getElementById('modal-title').innerText = "Revender Propiedad";
+        let html = "Selecciona propiedad, precio (100-999) y comprador:<br>";
+        if(misProps.length === 0) { html += "No tienes propiedades."; }
+        else {
+            misProps.forEach(pIdx => {
+                let p = mapa[pIdx];
+                // Agregamos el input para el precio personalizado
+                html += `<br><b>${p.n}</b>: 
+                         <input type="number" id="precio-${pIdx}" placeholder="250" min="100" max="999" style="width: 60px;"> 
+                         <select id="sel-${pIdx}">`;
+                
+                data.jugadores.forEach((j, i) => { 
+                    if(i !== miIdx) html += `<option value="${i}">${nombres[i]}</option>`; 
                 });
-            }
-            document.getElementById('modal-title').innerText = "Revender Propiedad";
-            let html = "Selecciona propiedad y comprador:<br>";
-            if(misProps.length === 0) { html += "No tienes propiedades."; }
-            else {
-                misProps.forEach(pIdx => {
-                    let p = mapa[pIdx];
-                    html += `<br><b>${p.n}</b> ($${p.p}): <select id="sel-${pIdx}">`;
-                    data.jugadores.forEach((j, i) => { if(i !== miIdx) html += `<option value="${i}">${nombres[i]}</option>`; });
-                    html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button>`;
-                });
-            }
-            document.getElementById('modal-text').innerHTML = html;
-            document.getElementById('modal').style.display = 'block';
-        });
-    }
+                
+                html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button>`;
+            });
+        }
+        document.getElementById('modal-text').innerHTML = html;
+        document.getElementById('modal').style.display = 'block';
+    });
+}
 
     function proponerVenta(pIdx) {
-        let comprador = document.getElementById('sel-'+pIdx).value;
-        let precio = Math.floor(mapa[pIdx].p * 0.8);
-        db.ref('salas/' + sala + '/ofertas').push({prop: pIdx, de: miIdx, para: comprador, precio: precio});
-        log(nombres[miIdx] + " propuso vender " + mapa[pIdx].n + " a " + nombres[comprador] + " por $" + precio);
-        document.getElementById('modal').style.display = 'none';
+    let comprador = document.getElementById('sel-' + pIdx).value;
+    let precioInput = document.getElementById('precio-' + pIdx).value;
+    let precio = parseInt(precioInput);
+
+    // Validación: que el precio esté entre 100 y 999
+    if (!precio || precio < 100 || precio > 999) {
+        alert("Por favor, ingresa un precio válido entre 100 y 999.");
+        return;
     }
+
+    db.ref('salas/' + sala + '/ofertas').push({
+        prop: pIdx, 
+        de: miIdx, 
+        para: comprador, 
+        precio: precio
+    });
+
+    log(nombres[miIdx] + " propuso vender " + mapa[pIdx].n + " a " + nombres[comprador] + " por $" + precio);
+    document.getElementById('modal').style.display = 'none';
+}
 
     function escucharOfertas() {
         db.ref('salas/' + sala + '/ofertas').on('child_added', snap => {
