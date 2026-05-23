@@ -302,6 +302,23 @@ function mostrarNotificacionMision(titulo) {
     document.getElementById('msg-mision').innerText = titulo;
     document.getElementById('modal-mision-completada').style.display = 'block';
 }
+
+        function verificarMisionNegociador(jugadorIdx) {
+    db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/negociador').once('value', snap => {
+        if (!snap.val()) { // Si aún no la ha cumplido
+            // 1. Marcar misión como completada
+            db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/negociador').set(true);
+            
+            // 2. Entregar recompensa
+            db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/dinero').transaction(d => d + 400);
+            
+            // 3. Mostrar modal de éxito
+            document.getElementById('msg-mision').innerText = "¡Has ganado $400 por tu primer intercambio!";
+            document.getElementById('modal-mision-completada').style.display = 'block';
+            log(nombres[jugadorIdx] + " completó la misión: El negociador.");
+        }
+    });
+}
         
     function verificarBancarrota(jugadorIdx, saldo) {
         if (saldo < 0) {
@@ -369,6 +386,12 @@ function mostrarNotificacionMision(titulo) {
                 }
                 return;
             });
+
+
+            // Llamada para el vendedor (o.de) y para el comprador (miIdx)
+verificarMisionNegociador(o.de); 
+verificarMisionNegociador(miIdx);
+            
             db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
             log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
             db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
