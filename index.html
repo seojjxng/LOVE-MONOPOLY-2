@@ -792,7 +792,7 @@ function mostrarNotificacionMision(titulo) {
     verPropiedad(pos, true);
 }
 
-        function verPropiedad(pos, esCaida = false) {
+       function verPropiedad(pos, esCaida = false) {
     let p = mapa[pos];
     if (p.p === 0) return;
     
@@ -806,6 +806,20 @@ function mostrarNotificacionMision(titulo) {
     db.ref('salas/' + sala).once('value', snap => {
         let data = snap.val();
         let prop = data.propiedades ? data.propiedades[pos] : null;
+        
+        // Datos para propiedades normales
+        let multClima = data.clima !== undefined ? climas[data.clima].mult : 1.0;
+        let nombreClima = data.clima !== undefined ? climas[data.clima].n : 'Normal';
+        let porcentajes = [0.10, 0.15, 0.20, 0.30, 0.40, 0.50];
+        let nivelesNombres = ["Base", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
+        
+        let listaAlquileres = "";
+        porcentajes.forEach((porc, i) => {
+            let precioNormal = Math.floor(p.p * porc);
+            let precioClima = Math.floor(precioNormal * multClima);
+            let notaClima = (multClima !== 1) ? ` <small style="color:red;">(c/clima: $${precioClima})</small>` : "";
+            listaAlquileres += `<li>${nivelesNombres[i]}: $${precioNormal}${notaClima}</li>`;
+        });
         
         document.getElementById('modal-title').innerText = "Tarjeta de Propiedad";
         
@@ -827,7 +841,7 @@ function mostrarNotificacionMision(titulo) {
             }
         } else if (prop.owner === miIdx) {
             htmlCard += `<p>Dueño: <b>Tú</b></p>`;
-            if (!esFerrocarril) htmlCard += `<p>Nivel: <b>${["Base", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"][prop.nivel || 0]}</b></p>`;
+            if (!esFerrocarril) htmlCard += `<p>Nivel: <b>${nivelesNombres[prop.nivel || 0]}</b></p>`;
             
             if (!prop.hipotecada) {
                 if (!esFerrocarril && prop.nivel < 5) extra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
@@ -836,19 +850,16 @@ function mostrarNotificacionMision(titulo) {
                 extra.innerHTML += `<button class="btn" onclick="liberar(${pos})">Liberar</button>`;
             }
         } else {
-            // LÓGICA DE ALQUILER (Diferente para Ferrocarriles)
             htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>`;
             let alqFinal = 0;
             
             if (esFerrocarril) {
-                // Contar cuántos transportes tiene el dueño
                 let transportes = [8, 24, 26, 27];
                 let count = transportes.filter(idx => data.propiedades[idx] && data.propiedades[idx].owner === prop.owner).length;
                 let tabla = { 1: 100, 2: 150, 3: 250, 4: 300 };
                 alqFinal = tabla[count] || 100;
             } else {
-                let multClima = data.clima !== undefined ? climas[data.clima].mult : 1.0;
-                alqFinal = Math.floor(p.p * [0.10, 0.15, 0.20, 0.30, 0.40, 0.50][prop.nivel || 0] * multClima);
+                alqFinal = Math.floor(p.p * porcentajes[prop.nivel || 0] * multClima);
             }
             
             htmlCard += `<p>Alquiler a pagar: <b>$${alqFinal}</b></p>`;
@@ -857,12 +868,20 @@ function mostrarNotificacionMision(titulo) {
             }
         }
         
-        // --- MOSTRAR INFORMACIÓN ---
-        document.getElementById('modal-text').innerHTML = htmlCard + "</div>";
+        // --- INFORMACIÓN DE PRECIOS (AQUÍ ESTÁ LA TABLA) ---
+        htmlCard += `<hr><p style="font-size: 11px;"><b>${esFerrocarril ? "Alquiler según transportes:" : "Precios de Alquiler ("+nombreClima+"): "}</b></p>
+                     <ul style="font-size: 11px; padding-left: 20px;">`;
+        
+        if (esFerrocarril) {
+            htmlCard += `<li>1 poseído: $100</li><li>2 poseídos: $150</li><li>3 poseídos: $250</li><li>4 poseídos: $300</li>`;
+        } else {
+            htmlCard += listaAlquileres;
+        }
+        
+        document.getElementById('modal-text').innerHTML = htmlCard + "</ul></div>";
         document.getElementById('modal').style.display = 'block';
     });
 }
-
     function ejecutarEvento(nombreCasilla) {
         let carta = obtenerCarta();
         db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => {
