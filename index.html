@@ -1621,16 +1621,6 @@ window.iniciarJuegoConfirmado = function() {
     });
 };
 
-// 4. Listener para el chat con protección
-const chatInput = document.getElementById('chat-msg');
-if (chatInput) {
-    chatInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            enviarChat();
-        }
-    });
-}
-
 
        window.addEventListener('DOMContentLoaded', () => {
         if (typeof renderizarTablero === 'function') renderizarTablero();
