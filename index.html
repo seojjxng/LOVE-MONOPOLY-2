@@ -192,19 +192,19 @@
     const nombres = ["Dog", "Horse", "Hat", "Car"];
     const colores = ["#ffb7b2", "#ffd8a8", "#b2f2bb", "#a5d8ff"];
 
-        // Configuración de colores por grupo
+        // 1. DEFINICIONES BASE (Seguras)
     const grupos = [
-    { id: 'grupo1', color: "#ff80bf", indices: [1, 3, 4, 5] },
-    { id: 'grupo2', color: "#a5d8ff", indices: [7, 10, 11, 13] },
-    { id: 'grupo3', color: "#b2f2bb", indices: [14, 15, 16, 17] },
-    { id: 'grupo4', color: "#ffd8a8", indices: [19, 20, 21, 24] },
-    { id: 'grupo5', color: "#eebafa", indices: [25, 27, 28] },
-    { id: 'ferrocarriles', color: 'transparent', indices: [8, 22, 26, 27] } 
-];
+        { id: 'grupo1', color: "#ff80bf", indices: [1, 3, 4, 5] },
+        { id: 'grupo2', color: "#a5d8ff", indices: [7, 10, 11, 13] },
+        { id: 'grupo3', color: "#b2f2bb", indices: [14, 15, 16, 17] },
+        { id: 'grupo4', color: "#ffd8a8", indices: [19, 20, 21, 24] },
+        { id: 'grupo5', color: "#eebafa", indices: [25, 27, 28] },
+        { id: 'ferrocarriles', color: 'transparent', indices: [8, 22, 26, 27] } 
+    ];
 
-function obtenerGrupo(pos) {
-    return grupos.find(g => g.indices.includes(pos));
-}
+    function obtenerGrupo(pos) {
+        return grupos.find(g => g.indices.includes(pos));
+    }
         
     const mapa = [
     {n:"SALIDA",p:0},{n:"ITAEWON",p:100},{n:"ARCA",p:0},{n:"BUSAN",p:200},
@@ -1080,36 +1080,33 @@ function mostrarNotificacionMision(titulo) {
     }
 });
 
-window.addEventListener('DOMContentLoaded', () => {
-    const board = document.getElementById('board');
-    if (!board) return; // Seguridad extra
-    
-    board.innerHTML = ''; // Limpiar previo
 
-    mapa.forEach((m, i) => { 
-        const d = document.createElement('div'); 
-        d.className = 'cell'; 
-        d.id = 'cell-' + i; 
-        d.onclick = () => verPropiedad(i);
-        
-        let g = obtenerGrupo(i);
-        
-        // Si el grupo es ferrocarril, no dibujamos el strip
-        let stripHTML = '';
-        if (g && g.color !== 'transparent') {
-            stripHTML = `<div class="strip" style="background: ${g.color}"></div>`;
-        }
-        
-        d.innerHTML = `${stripHTML}
-                       <div class="contenido">
-                           ${m.n}<br>
-                           ${m.p > 0 ? '$' + m.p : ''}
-                       </div>
-                       <div class="house-container"></div>`;
-        
-        board.appendChild(d); 
+    // 2. INICIALIZACIÓN POR SEPARADO
+    window.addEventListener('DOMContentLoaded', () => {
+        // A. Dibujar Tablero
+        try {
+            const board = document.getElementById('board');
+            if (board) {
+                mapa.forEach((m, i) => {
+                    const d = document.createElement('div');
+                    d.className = 'cell';
+                    d.id = 'cell-' + i;
+                    d.onclick = () => verPropiedad(i);
+                    let g = obtenerGrupo(i);
+                    let strip = (g && g.color !== 'transparent') ? `<div class="strip" style="background:${g.color}"></div>` : '';
+                    d.innerHTML = `${strip}<div class="contenido">${m.n}<br>${m.p > 0 ? '$' + m.p : ''}</div>`;
+                    board.appendChild(d);
+                });
+            }
+        } catch (e) { console.error("Error al dibujar tablero:", e); }
+
+        // B. INICIALIZAR DADOS, CLIMA Y DEMÁS
+        // Si tienes funciones como inicializarDados() o iniciarClima(), ponlas aquí abajo
+        try {
+            if (typeof iniciarDados === 'function') iniciarDados();
+            if (typeof actualizarClima === 'function') actualizarClima();
+        } catch (e) { console.error("Error al cargar extras:", e); }
     });
-});
 </script>
 </body>
 </html>
