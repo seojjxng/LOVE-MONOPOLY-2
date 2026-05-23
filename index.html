@@ -833,7 +833,7 @@ function mostrarNotificacionMision(titulo) {
             
         // Aplicando el filtro al icono
         if (esFerrocarril && iconos[pos]) {
-            htmlCard += `<img src="${iconos[pos]}" style="width: 60px; height: 60px; display: block; margin: 10px auto; object-fit: contain; -webkit-mask-image: url('${iconos[pos]}'); mask-image: url('${iconos[pos]}'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; background-color: #ff80bf;">`;
+            htmlCard += `<div style="width: 60px; height: 60px; margin: 30px auto 10px auto; background-color: #ff80bf; -webkit-mask: url('${iconos[pos]}') no-repeat center / contain; mask: url('${iconos[pos]}') no-repeat center / contain;"></div>`;
         }
             
         if (esFerrocarril) {
