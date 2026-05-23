@@ -565,10 +565,14 @@ function mostrarNotificacionMision(titulo) {
     });
 }
 
-    function abrirIntercambio() {
+   function abrirIntercambio() {
+    // 1. LIMPIEZA: Borramos cualquier botón o aviso anterior en el modal
+    document.getElementById('modal-extra').innerHTML = ""; 
+    
     db.ref('salas/' + sala).once('value', snap => {
         let data = snap.val();
         let misProps = [];
+        
         if(data.propiedades) {
             Object.keys(data.propiedades).forEach(pIdx => {
                 if(data.propiedades[pIdx].owner === miIdx) misProps.push(pIdx);
@@ -781,11 +785,13 @@ function mostrarNotificacionMision(titulo) {
             
         // Contenido informativo (siempre visible)
         if (!prop) {
-            htmlCard += `<p>Estado: <b>Disponible</b></p>`;
-            if(esCaida) extra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar</button>`;
-        } else if (prop.owner === miIdx) {
-            htmlCard += `<p>Dueño: <b>Tú</b></p><p>Nivel: <b>${nivelesNombres[prop.nivel || 0]}</b></p>
-                         <p>Estado: <b>${prop.hipotecada ? "Hipotecada" : "Activa"}</b></p>`;
+    htmlCard += `<p>Estado: <b>Disponible</b></p>`;
+    // SOLO si está disponible y caíste en ella, puedes comprar
+    if(esCaida) extra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar</button>`;
+} else if (prop.owner === miIdx) {
+    // AQUÍ: Solo botones de gestión de propiedad propia, NUNCA botón de comprar
+    htmlCard += `<p>Dueño: <b>Tú</b></p><p>Nivel: <b>${nivelesNombres[prop.nivel || 0]}</b></p>
+                 <p>Estado: <b>${prop.hipotecada ? "Hipotecada" : "Activa"}</b></p>`;
             if (!prop.hipotecada) {
                 if (prop.nivel < 5) extra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
                 extra.innerHTML += `<button class="btn" style="background: #ad0c0c;" onclick="hipotecar(${pos})">Hipotecar (+$${Math.floor(p.p/2)})</button>`;
