@@ -108,6 +108,13 @@
             </div>
         </div>
 
+        <div id="modal-mision-completada" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #fff; padding: 20px; border: 5px solid #ff80bf; border-radius: 20px; text-align: center; z-index: 2000; box-shadow: 0 0 20px rgba(0,0,0,0.3);">
+    <h2 style="color: #ff59aa;">¡Misión Completada!</h2>
+    <p id="mision-nombre" style="font-weight: bold;"></p>
+    <p>¡Has recibido un bono de <b id="mision-premio"></b>!</p>
+    <button class="btn" onclick="document.getElementById('modal-mision-completada').style.display='none'">Genial</button>
+</div>
+
         <div id="banco-container">
             <button class="btn" style="width: 140px" onclick="abrirBanco()">🏦 Banco</button>
             <button class="btn" style="width: 140px" onclick="pagarPrestamo()">💳 Pagar Préstamo</button>
@@ -276,6 +283,26 @@ function pagarPenalidad() {
     });
 }
 
+        function completarMision(misionId, titulo, premio) {
+    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/misionesCumplidas/' + misionId).once('value', snap => {
+        if (!snap.exists()) {
+            // Marcar como cumplida en Firebase
+            db.ref('salas/' + sala + '/jugadores/' + miIdx + '/misionesCumplidas/' + misionId).set(true);
+            
+            // Sumar el premio
+            db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => d + premio);
+            
+            // Mostrar modal
+            document.getElementById('mision-nombre').innerText = titulo;
+            document.getElementById('mision-premio').innerText = "$" + premio;
+            document.getElementById('modal-mision-completada').style.display = 'block';
+            log("¡Misión completada: " + titulo + "! Recibiste $" + premio);
+        }
+    });
+}
+
+        
+
         function abrirBanco() {
     db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
         let j = snap.val();
@@ -393,22 +420,34 @@ function pagarPenalidad() {
     }
 
     function confirmarCompra(oKey) {
-        db.ref('salas/' + sala + '/ofertas/' + oKey).once('value', snap => {
-            let o = snap.val();
-            db.ref('salas/' + sala + '/jugadores').transaction(j => {
-                if(j[miIdx].dinero >= o.precio) {
-                    j[miIdx].dinero -= o.precio;
-                    j[o.de].dinero += o.precio;
-                    return j;
-                }
-                return;
-            });
-            db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
-            log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
-            db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
-            document.getElementById('modal').style.display = 'none';
+    db.ref('salas/' + sala + '/ofertas/' + oKey).once('value', snap => {
+        let o = snap.val();
+        
+        // Ejecutamos la transacción primero
+        db.ref('salas/' + sala + '/jugadores').transaction(j => {
+            if(j[miIdx].dinero >= o.precio) {
+                j[miIdx].dinero -= o.precio;
+                j[o.de].dinero += o.precio;
+                return j;
+            }
+            return; // Si no hay dinero, no devuelve nada (falla la transacción)
+        }, (error, committed) => {
+            if (committed) {
+                // SOLO SI LA TRANSACCIÓN FUE EXITOSA, actualizamos propiedad y misión
+                db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
+                
+                // Llamamos a la misión aquí
+                completarMision('negociador', 'El negociador', 400);
+                
+                log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
+                db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
+                document.getElementById('modal').style.display = 'none';
+            } else {
+                alert("No tienes suficiente dinero para completar la compra.");
+            }
         });
-    }
+    });
+}
 
    function verPropiedad(pos, esCaida = false) {
         let p = mapa[pos];
