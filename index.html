@@ -984,14 +984,17 @@ function mostrarNotificacionMision(titulo) {
     db.ref('salas/' + sala).on('value', snap => { 
         let s = snap.val(); 
         
-        // 1. Validaciones de seguridad para evitar errores de tipo
+        // 1. Validaciones de seguridad
         if (!s) return;
         
-        // Si no existen jugadores, no hacemos nada y salimos (evita el error)
+        // Si no existen jugadores, no hacemos nada y salimos
         if (!s.jugadores) {
             console.log("Esperando a que se unan jugadores...");
             return;
         }
+
+        // Definimos jugadores aquí para usarla en todo el bloque
+        let jugadores = s.jugadores;
 
         // Chat
         let chatLog = document.getElementById('chat-log');
@@ -1006,15 +1009,15 @@ function mostrarNotificacionMision(titulo) {
 
         // Dinero y Turno
         if (document.getElementById('dinero-mio')) {
-            document.getElementById('dinero-mio').innerText = (s.jugadores[miIdx] ? s.jugadores[miIdx].dinero : 0);
+            document.getElementById('dinero-mio').innerText = (jugadores[miIdx] ? jugadores[miIdx].dinero : 0);
         }
         if (document.getElementById('turno-text')) {
             document.getElementById('turno-text').innerText = "Turno: " + (nombres[s.turno] || "...");
         }
 
-        // Actualizar posiciones (CON VALIDACIÓN DE TIPO ARRAY)
-        if (Array.isArray(s.jugadores)) {
-            s.jugadores.forEach((j, i) => { 
+        // Actualizar posiciones
+        if (Array.isArray(jugadores)) {
+            jugadores.forEach((j, i) => { 
                 let el = document.getElementById('p' + i); 
                 if (el && j) {
                     el.style.display = 'block'; 
@@ -1027,7 +1030,7 @@ function mostrarNotificacionMision(titulo) {
             });
         }
 
-        // 4. Actualizar propiedades
+        // Actualizar propiedades
         if(s.propiedades) { 
             Object.keys(s.propiedades).forEach(pos => { 
                 let cell = document.getElementById('cell-' + pos);
@@ -1047,11 +1050,14 @@ function mostrarNotificacionMision(titulo) {
             }); 
         }
 
+        // Log
         if(s.log) { 
-            let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); document.getElementById('log').innerHTML = h; 
+            let h = ""; 
+            Object.values(s.log).forEach(l => { if(l) h += l + "<br>"; }); 
+            document.getElementById('log').innerHTML = h; 
         }
 
-        // 5. Misiones (Solo si el jugador existe)
+        // 5. Misiones
         if (jugadores[miIdx]) {
             verificarMisionCajaFuerte(miIdx, jugadores[miIdx].dinero);
             
@@ -1073,8 +1079,8 @@ function mostrarNotificacionMision(titulo) {
                 }
             }
         }
-    });
-}
+    }); // Cierre de db.ref
+} // Cierre de la función sincronizar
      
     window.addEventListener('DOMContentLoaded', () => {
     console.log("Iniciando tablero...");
