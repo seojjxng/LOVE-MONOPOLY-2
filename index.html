@@ -1089,17 +1089,21 @@ function mostrarNotificacionMision(titulo) {
     
     let g = obtenerGrupo(i);
     
-    // Ahora pintamos el strip para todos, incluyendo el nuevo grupo crema
-    let stripHTML = '';
-    if (g) {
-        stripHTML = `<div class="strip" style="background: ${g.color}"></div>`;
+    // Si es un ferrocarril (grupo crema), le damos un borde distintivo
+    if (g && g.color === "#f5f5dc") {
+        d.style.border = "3px solid #f5f5dc"; 
+        d.style.backgroundColor = "#fffef0"; // Un tono muy suave para que resalte
+    } else if (g) {
+        // Para las otras propiedades, mantenemos tu lógica del strip
+        d.innerHTML = `<div class="strip" style="background: ${g.color}"></div>`;
     }
     
-    d.innerHTML = `${stripHTML}
-                   <div class="contenido">
-                       ${m.n}<br>
-                       ${m.p > 0 ? '$' + m.p : ''}
-                   </div>`;
+    // Añadimos el contenido de la celda
+    d.innerHTML += `<div class="contenido" style="padding-top: 5px;">
+                        ${m.n}<br>
+                        ${m.p > 0 ? '$' + m.p : ''}
+                    </div>`;
+                    
     document.getElementById('board').appendChild(d);
 });
 </script>
