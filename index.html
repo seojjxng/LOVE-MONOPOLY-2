@@ -527,35 +527,32 @@ window.onload = crearCasillasDOM;
         
         
     function sincronizar() { 
-        escucharOfertas();
-        db.ref('salas/' + sala + '/anuncioClima').on('value', snap => {
-    let cIdx = snap.val();
-    if (cIdx !== null) anunciarClima(cIdx);
-});
         db.ref('salas/' + sala).on('value', snap => { 
-            let s = snap.val(); if(!s) return; 
-            document.getElementById('dinero-mio').innerText = (s.jugadores[miIdx]?.dinero || 0)
-            document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
+            let s = snap.val(); 
+            if(!s) return; 
+            document.getElementById('dinero-mio').innerText = s.jugadores[miIdx]?.dinero || 0;
+            document.getElementById('turno-text').innerText = "Turno: " + (nombres[s.turno] || "Esperando...");
+            
             if(s.clima !== undefined) { 
-    let c = climas[s.clima]; 
-    if(c) {
-        document.getElementById('clima-display').innerText = "Estación: " + c.n; 
-    } else {
-        console.warn("El clima definido en Firebase no existe en el array local:", s.clima);
-    }
-}
-            s.jugadores.forEach((j, i) => { 
-    let el = document.getElementById('p' + i); 
-    if (el) {
-        el.style.display = 'block'; 
-        let cell = document.getElementById('cell-' + j.pos); 
-        if (cell) {
-            // Usamos offsetParent para asegurar coordenadas correctas
-            el.style.left = (cell.offsetLeft + 10) + 'px'; 
-            el.style.top = (cell.offsetTop + 10) + 'px'; 
+                let c = climas[s.clima]; 
+                if(c) document.getElementById('clima-display').innerText = "Estación: " + c.n; 
+            }
+
+            if(s.jugadores) {
+                s.jugadores.forEach((j, i) => { 
+                    let el = document.getElementById('p' + i); 
+                    if (el) {
+                        el.style.display = 'block'; 
+                        let cell = document.getElementById('cell-' + j.pos); 
+                        if (cell) {
+                            el.style.left = (cell.offsetLeft + 10) + 'px'; 
+                            el.style.top = (cell.offsetTop + 10) + 'px'; 
+                        }
+                    }
+                });
+            }
         }); 
-    }); 
-}
+    }
             if(s.propiedades) { Object.keys(s.propiedades).forEach(pos => { 
                 let cell = document.getElementById('cell-' + pos);
                 if(cell) {
