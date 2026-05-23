@@ -680,7 +680,7 @@ function mostrarNotificacionMision(titulo) {
         db.ref('salas/'+sala+'/jugadores/'+miIdx).update({pos: 8, enCarcel: 2});
         log(nombres[miIdx] + " fue enviado a la cárcel.");
         document.getElementById('modal-title').innerText = "Cárcel";
-        document.getElementById('modal-text').innerText = "¡Estás en la cárcel!";
+        document.getElementById('modal-text').innerText = "¡ALTO AHÍ! Estás bajo arresto.";
         document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="pagarFianza()">Pagar Fianza ($100)</button><button class="btn" onclick="quedarseEnCarcel()">Quedarse</button>`;
         document.getElementById('modal').style.display = 'block';
         turnosSeis = 0;
@@ -694,42 +694,38 @@ function mostrarNotificacionMision(titulo) {
         return; 
     }
     
-    // --- IMPORTANTE: ESTA LLAVE CIERRA LA FUNCIÓN ---
-}
-
-
-        if (p.n === "PARADA") {
+    // CASO PARADA
+    if (p.n === "PARADA") {
         db.ref('salas/' + sala + '/impuestosAcumulados').once('value', snap => {
             let acumulado = snap.val() || 0;
             if (acumulado > 0) {
                 db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => d + acumulado);
-                log(nombres[miIdx] + " llegó a la PARADA y cobró $" + acumulado + " de impuestos acumulados.");
-                db.ref('salas/' + sala + '/impuestosAcumulados').set(0); // Reiniciar bolsa
+                log(nombres[miIdx] + " llegó a la PARADA y cobró $" + acumulado + " de impuestos.");
+                db.ref('salas/' + sala + '/impuestosAcumulados').set(0);
             } else {
-                log(nombres[miIdx] + " llegó a la PARADA, pero no había impuestos acumulados.");
+                log(nombres[miIdx] + " llegó a la PARADA, pero no había impuestos.");
             }
         });
+        return; 
+    }
+    
+    // CASO IMPUESTOS
+    if (p.n === "IMPUESTOS") {
+        db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => {
+            let nuevo = Number(d) - 100;
+            setTimeout(() => verificarBancarrota(miIdx, nuevo), 500);
+            return nuevo;
+        });
+        db.ref('salas/' + sala + '/impuestosAcumulados').transaction(a => (a || 0) + 100);
+        log(nombres[miIdx] + " pagó impuestos de $100.");
         return;
     }
-        
-        if (p.n === "IMPUESTOS") {
-            db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => {
-                let nuevo = Number(d) - 100;
-                setTimeout(() => verificarBancarrota(miIdx, nuevo), 500);
-                return nuevo;
-            });
-            
-            // AGREGA ESTA LÍNEA PARA ACUMULAR EL DINERO:
-            db.ref('salas/' + sala + '/impuestosAcumulados').transaction(a => (a || 0) + 100);
-            
-            log(nombres[miIdx] + " pagó impuestos de $100.");
-            document.getElementById('modal-title').innerText = "Impuestos";
-            document.getElementById('modal-text').innerText = "Pagaste $100.";
-            document.getElementById('modal-extra').innerHTML = "";
-            document.getElementById('modal').style.display = 'block';
-            return;
-            
-        }
+
+    // SI NO ES NINGUNA DE LAS ANTERIORES, ES PROPIEDAD
+    verPropiedad(pos, true);
+    
+} // <--- ESTA ES LA ÚNICA LLAVE QUE CIERRA MANEJARCASILLA. 
+  // AHORA `verPropiedad` debe empezar DESPUÉS de esta llave
         function verPropiedad(pos, esCaida = false) {
     let p = mapa[pos];
     if (p.p === 0) return;
@@ -1015,6 +1011,7 @@ function mostrarNotificacionMision(titulo) {
                     "renovador": "¡Excelente constructor! Has construido 5 casas en total. ¡Has ganado $500!",
                     "monopolioTotal": "¡INCREÍBLE! Has conseguido el Monopolio Total. ¡Premio de $1,500!"
 };
+                
 
                 if (mensajes[m]) {
                     mostrarNotificacionMision(mensajes[m]);
