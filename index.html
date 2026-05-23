@@ -442,29 +442,24 @@ function mostrarNotificacionMision(titulo) {
     db.ref('salas/' + sala + '/propiedades').once('value', snap => {
         let propiedades = snap.val();
         if (!propiedades) return;
-
-        // Debes definir aquí los IDs de los grupos más caros (ejemplo: grupos 6, 7 y 8)
-        // Ajusta los números según tu array de 'grupos'
-        const setsMasCaros = [6, 7, 8]; 
-
-        let tieneTodosLosSets = setsMasCaros.every(grupoIdx => {
-            return grupos[grupoIdx].indices.every(pIdx => 
-                propiedades[pIdx] && propiedades[pIdx].owner === jugadorIdx
-            );
+        
+        
+        const setsMasCaros = [3, 4, 5]; 
+        let tieneTodosLosSets = setsMasCaros.every(gIdx => {
+            return grupos[gIdx].indices.every(pIdx => propiedades[pIdx] && propiedades[pIdx].owner === jugadorIdx);
         });
 
         if (tieneTodosLosSets) {
             db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/monopolioTotal').once('value', snap => {
-                if (!snap.val()) { // Solo si no se ha reclamado
+                if (!snap.val()) {
                     db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/monopolioTotal').set(true);
                     db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/dinero').transaction(d => d + 1500);
                     db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/ultimaMision').set("monopolioTotal");
-                    
-                    log(nombres[jugadorIdx] + " completó la misión: ¡Monopolio Total!");
+                    log(nombres[jugadorIdx] + " completó la misión: Monopolio Total.");
                 }
             });
         }
-    });
+    }); // Cierra .once('value')
 }
 
         
