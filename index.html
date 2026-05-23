@@ -118,7 +118,21 @@
     </style>
 </head>
 <body>
-
+<div id="dedicatoria-modal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 240, 243, 0.8); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 20px; border: 2px solid #ff80bf; text-align: center; position: relative; width: 300px; color: #c71585;">
+        <span onclick="document.getElementById('dedicatoria-modal').style.display='none'" style="position: absolute; top: 10px; right: 15px; cursor: pointer; font-size: 20px; font-weight: bold;">&times;</span>
+        <p style="font-family: 'Montserrat', sans-serif; font-size: 16px; font-style: italic;">
+            "A Naeun, mi musa; porque todas mis mejores ideas nacen pensando en ella."
+        </p>
+        <p style="font-weight: bold;">- Seojun</p>
+    </div>
+    <script>
+    // Se cierra sola después de 7 segundos
+    setTimeout(() => {
+        const modal = document.getElementById('dedicatoria-modal');
+        if (modal) modal.style.display = 'none';
+    }, 7000);
+</script>
 <audio id="musica-fondo" loop>
     <source src="https://dl.dropbox.com/scl/fi/5oxzgnxoe30zqd4m6hdfh/kawaii-playlist-for-snack-time-BGM-POP.mp3?rlkey=1lw76u3u1w1ck3dj2ej5x7ml7&st=y6j07iwx&dl=1" type="audio/mpeg">
 </audio>
