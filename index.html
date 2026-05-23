@@ -1396,17 +1396,18 @@ function verificarInicio() {
         }
     });
 }
-
-// 2. Función que bloquea la sala y reparte el primer turno
 function iniciarJuegoConfirmado() {
-    // Marcamos la partida como iniciada
+    // Marcamos la partida como iniciada en Firebase
     db.ref('salas/' + sala).update({
         iniciada: true,
-        turno: 0 // Inicia el jugador 0
+        turno: 0 
     });
     
-    // Ocultamos el modal
-    document.getElementById('modal-inicio').style.display = 'none';
+    // Ocultamos el modal en la pantalla
+    let modal = document.getElementById('modal-inicio');
+    if (modal) {
+        modal.style.display = 'none';
+    }
     
     // Avisamos a todos en el chat
     db.ref('salas/' + sala + '/chat').push({
@@ -1417,29 +1418,38 @@ function iniciarJuegoConfirmado() {
 
 // 3. Listener que detecta cuándo hay jugadores suficientes para iniciar
 // Este código debe ir idealmente al final de tu función sincronizar
+// 3. Listener que detecta cuándo hay jugadores suficientes para iniciar
 function configurarListenerInicio() {
+    if (!sala) return; // Protección: no hacer nada si no hay sala definida
+
     db.ref('salas/' + sala + '/jugadores').on('value', snap => {
         let jugadores = snap.val();
         if (!jugadores) return;
         
         let numJugadores = Object.keys(jugadores).length;
         
-        // Si hay más de 1 jugador y soy el admin, verificar si mostrar el modal
+        // Si hay más de 1 jugador y soy el admin (miIdx === 0)
         if (numJugadores > 1 && miIdx === 0) {
             db.ref('salas/' + sala + '/iniciada').once('value', s => {
-                if (!s.val()) {
-                    document.getElementById('modal-inicio').style.display = 'block';
+                let modal = document.getElementById('modal-inicio');
+                // Solo mostrar si el modal existe y la partida no ha iniciado
+                if (modal && !s.val()) {
+                    modal.style.display = 'block';
                 }
             });
         }
     });
 }
 
-document.getElementById('chat-msg').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        enviarChat();
-    }
-});
+// 4. Listener para el chat con protección
+const chatInput = document.getElementById('chat-msg');
+if (chatInput) {
+    chatInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            enviarChat();
+        }
+    });
+}
      
 
 window.addEventListener('DOMContentLoaded', () => {
