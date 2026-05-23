@@ -305,16 +305,16 @@ function mostrarNotificacionMision(titulo) {
 
         function verificarMisionNegociador(jugadorIdx) {
     db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/negociador').once('value', snap => {
-        if (!snap.val()) { // Si aún no la ha cumplido
-            // 1. Marcar misión como completada
+        if (!snap.val()) {
+            // 1. Marcar como completada en BD
             db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/misionesCumplidas/negociador').set(true);
             
             // 2. Entregar recompensa
             db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/dinero').transaction(d => d + 400);
             
-            // 3. Mostrar modal de éxito
-            document.getElementById('msg-mision').innerText = "¡Has ganado $400 por tu primer intercambio!";
-            document.getElementById('modal-mision-completada').style.display = 'block';
+            // 3. Registrar el logro para que el cliente lo detecte
+            db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/ultimaMision').set("negociador");
+            
             log(nombres[jugadorIdx] + " completó la misión: El negociador.");
         }
     });
@@ -693,6 +693,17 @@ verificarMisionNegociador(miIdx);
             }); }
             if(s.chat) { let h = ""; Object.values(s.chat).forEach(c => h += "<b>"+c.n+":</b> "+c.m+"<br>"); document.getElementById('chat-log').innerHTML = h; }
             if(s.log) { let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); document.getElementById('log').innerHTML = h; }
+
+
+            if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
+            let m = s.jugadores[miIdx].ultimaMision;
+            if (m === "negociador") {
+                mostrarNotificacionMision("¡Has ganado $400 por tu primer intercambio!");
+                // Limpiar el aviso en Firebase para que no se repita en la siguiente sincronización
+                db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
+            }
+        }
+            
         }); 
     }
 
