@@ -145,18 +145,19 @@
     </div>
 
     <div class="sidebar">
-        <div class="panel">
-            <strong>Unirse a Sala</strong>
-            <input type="text" id="sala-id" class="input-field" placeholder="Nombre de la sala">
-            <button class="btn" id="btn-unirse" onclick="unirse()">Entrar a la sala</button>
-        </div>
-        <div class="panel">
-            <strong>Historial</strong><div id="log"></div>
-            <strong>Chat</strong><div id="chat-log"></div>
-            <input type="text" id="chat-msg" class="input-field" placeholder="Mensaje...">
-            <button class="btn" onclick="enviarChat()">Enviar</button>
-        </div>
+    <div class="panel">
+        <strong>Unirse a Sala</strong>
+        <input type="text" id="sala-id" class="input-field" placeholder="Nombre de la sala">
+        <button class="btn" id="btn-unirse" onclick="unirse()">Entrar a la sala</button>
     </div>
+
+    <div class="panel">
+    <strong>Historial</strong><div id="log"></div>
+    <strong>Chat</strong><div id="chat-log"></div>
+    <input type="text" id="chat-msg" class="input-field" placeholder="Mensaje...">
+    <button class="btn" onclick="enviarChat()">Enviar</button>
+    
+    <div id="contenedor-configuracion"></div>
 </div>
 
 <div id="modal-misiones" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; text-align: center; z-index: 1000;"> 
@@ -600,6 +601,44 @@ function mostrarNotificacionMision(titulo) {
             }
         });
     });
+}
+
+        function abrirMenuJuego() {
+    // Título y contenedor
+    document.getElementById('modal-title').innerText = "Configuración de Juego";
+    
+    let html = `
+        <div class="card-property">
+            <p>Selecciona una modalidad para esta sala:</p>
+            <div id="modal-extra">
+                <button class="btn" onclick="activarModo2vs2()">Activar Modo 2vs2</button>
+                <button class="btn" onclick="document.getElementById('modal').style.display = 'none'">Cerrar</button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('modal-text').innerHTML = html;
+    document.getElementById('modal').style.display = 'block';
+}
+
+function activarModo2vs2() {
+    db.ref('salas/' + sala + '/modo').set('2vs2');
+    log("<b>MODO 2vs2 ACTIVADO:</b> El equipo A (0,1) y Equipo B (2,3) compiten.");
+    document.getElementById('modal').style.display = 'none';
+}
+
+        function renderizarInterfaz() {
+    const contenedor = document.getElementById('contenedor-configuracion');
+    if (contenedor && miIdx === 0) {
+        contenedor.innerHTML = `
+            <div style="margin-top: 15px; border-top: 1px solid #ffccd5; padding-top: 10px; text-align: center;">
+                <span style="font-size: 10px; color: #ff80bf; font-weight: bold;">MODO DE JUEGO</span>
+                <button class="btn" onclick="abrirMenuJuego()" style="width: 100%; margin-top: 5px; background-color: #ff80bf; color: white;">
+                    ⚙️ Configuración 2vs2
+                </button>
+            </div>
+        `;
+    }
 }
 
    function abrirIntercambio() {
