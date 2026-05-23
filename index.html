@@ -981,16 +981,13 @@ function mostrarNotificacionMision(titulo) {
 }
         
    function sincronizar() { 
-    // PROTECCIÓN CRÍTICA: Si no hay conexión o la sala está vacía, no ejecutamos nada.
-    // Esto evita el error "s.jugadores.forEach is not a function"
     db.ref('salas/' + sala).on('value', snap => { 
         let s = snap.val(); 
-        if (!s || !s.jugadores) {
-            console.log("Esperando datos de la sala...");
-            return; 
-        }
+        
+        // PROTECCIÓN 1: Si no hay sala, salimos.
+        if (!s) return; 
 
-        // 1. Sincronización del Chat (ahora integrada dentro del flujo seguro)
+        // 1. Sincronización del Chat
         let chatLog = document.getElementById('chat-log');
         if (chatLog && s.chat) {
             chatLog.innerHTML = ""; 
@@ -1002,27 +999,33 @@ function mostrarNotificacionMision(titulo) {
         }
 
         // 2. Sincronización de Estado y Tablero
-        document.getElementById('dinero-mio').innerText = s.jugadores[miIdx] ? s.jugadores[miIdx].dinero : 0;
+        // PROTECCIÓN 2: Si jugadores no existe, mostramos valores por defecto en lugar de romper
+        let jugadores = s.jugadores || [];
+        let miJugador = jugadores[miIdx] || { dinero: 0 };
+
+        document.getElementById('dinero-mio').innerText = miJugador.dinero;
         document.getElementById('turno-text').innerText = "Turno: " + (nombres[s.turno] || "...");
         
         if(s.clima !== undefined && climas[s.clima]) { 
             document.getElementById('clima-display').innerText = "Estación: " + climas[s.clima].n; 
         }
 
-        // Actualizar posiciones
-        s.jugadores.forEach((j, i) => { 
-            let el = document.getElementById('p' + i); 
-            if(el) {
-                el.style.display = 'block'; 
-                let cell = document.getElementById('cell-' + j.pos); 
-                if(cell) {
-                    el.style.left = (cell.offsetLeft + 30) + 'px'; 
-                    el.style.top = (cell.offsetTop + 30) + 'px';
+        // 3. Actualizar posiciones (Solo si jugadores es un arreglo)
+        if (Array.isArray(jugadores)) {
+            jugadores.forEach((j, i) => { 
+                let el = document.getElementById('p' + i); 
+                if(el && j) { // Verificamos que 'j' también exista
+                    el.style.display = 'block'; 
+                    let cell = document.getElementById('cell-' + j.pos); 
+                    if(cell) {
+                        el.style.left = (cell.offsetLeft + 30) + 'px'; 
+                        el.style.top = (cell.offsetTop + 30) + 'px';
+                    }
                 }
-            }
-        });
+            });
+        }
 
-        // Actualizar propiedades
+        // 4. Actualizar propiedades
         if(s.propiedades) { 
             Object.keys(s.propiedades).forEach(pos => { 
                 let cell = document.getElementById('cell-' + pos);
@@ -1046,12 +1049,12 @@ function mostrarNotificacionMision(titulo) {
             let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); document.getElementById('log').innerHTML = h; 
         }
 
-        // Misiones
-        if (s.jugadores[miIdx]) {
-            verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
+        // 5. Misiones (Solo si el jugador existe)
+        if (jugadores[miIdx]) {
+            verificarMisionCajaFuerte(miIdx, jugadores[miIdx].dinero);
             
-            if (s.jugadores[miIdx].ultimaMision) {
-                let m = s.jugadores[miIdx].ultimaMision;
+            if (jugadores[miIdx].ultimaMision) {
+                let m = jugadores[miIdx].ultimaMision;
                 const mensajes = {
                     "negociador": "¡Has ganado $400 por tu primer intercambio!",
                     "inversor": "¡Felicidades! Has ganado $200 por ser un Inversor Inicial.",
