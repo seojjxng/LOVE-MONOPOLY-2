@@ -202,7 +202,6 @@
     { id: 'ferrocarriles', color: 'transparent', indices: [8, 22, 26, 27] } 
 ];
 
-// 2. DEFINICIÓN DE FUNCIONES DE APOYO
 function obtenerGrupo(pos) {
     return grupos.find(g => g.indices.includes(pos));
 }
@@ -1099,7 +1098,11 @@ JavaScript
 // ... (código anterior)
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. Dibujar el tablero
+    const board = document.getElementById('board');
+    if (!board) return; // Seguridad extra
+    
+    board.innerHTML = ''; // Limpiar previo
+
     mapa.forEach((m, i) => { 
         const d = document.createElement('div'); 
         d.className = 'cell'; 
@@ -1107,17 +1110,21 @@ window.addEventListener('DOMContentLoaded', () => {
         d.onclick = () => verPropiedad(i);
         
         let g = obtenerGrupo(i);
-        // Lógica segura para no deformar
-        let stripHTML = (g && g.color !== 'transparent') 
-            ? `<div class="strip" style="background: ${g.color}"></div>` 
-            : '';
+        
+        // Si el grupo es ferrocarril, no dibujamos el strip
+        let stripHTML = '';
+        if (g && g.color !== 'transparent') {
+            stripHTML = `<div class="strip" style="background: ${g.color}"></div>`;
+        }
         
         d.innerHTML = `${stripHTML}
                        <div class="contenido">
                            ${m.n}<br>
                            ${m.p > 0 ? '$' + m.p : ''}
-                       </div>`;
-        document.getElementById('board').appendChild(d); 
+                       </div>
+                       <div class="house-container"></div>`;
+        
+        board.appendChild(d); 
     });
 });
 </script>
