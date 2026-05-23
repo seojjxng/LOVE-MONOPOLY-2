@@ -316,10 +316,9 @@ function mostrarNotificacionMision(titulo) {
             db.ref('salas/' + sala + '/jugadores/' + jugadorIdx + '/ultimaMision').set("negociador");
             
             log(nombres[jugadorIdx] + " completó la misión: El negociador.");
-                }
-            }
-        }); 
-    } 
+        }
+    }); // <--- Aquí se cierra correctamente el .once
+}
 
         function verificarMisionInversor(jugadorIdx) {
     db.ref('salas/' + sala).once('value', snap => {
