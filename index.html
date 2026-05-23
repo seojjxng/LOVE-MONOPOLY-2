@@ -444,15 +444,6 @@ function mostrarNotificacionMision(titulo) {
         });
     }
 }
-
-
-
-    if (m === "intocable") {
-        mostrarNotificacionMision("¡El Intocable! Otros jugadores han caído 5 veces en tus propiedades. ¡Has ganado $400!");
-        // Limpiamos el aviso
-        db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
-    }
-}
         
     function verificarBancarrota(jugadorIdx, saldo) {
         if (saldo < 0) {
