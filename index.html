@@ -975,47 +975,40 @@ function verPropiedad(pos, esCaida = false) {
 }
 
         function pasarTurno() {
-    // 1. Resetear contador de seis seguidos
     if (typeof turnosSeis !== 'undefined') turnosSeis = 0;
 
-    // 2. Obtener datos de jugadores
     db.ref('salas/' + sala + '/jugadores').once('value', snap => {
         const jugadoresData = snap.val();
         if (!jugadoresData) return;
 
-        // 3. Obtener el turno actual
+        // 1. Obtenemos solo los que tienen online: true
+        let idsJugadores = Object.keys(jugadoresData);
+        let turnoActual;
+        
         db.ref('salas/' + sala + '/turno').once('value', tSnap => {
-            let turnoActual = Number(tSnap.val());
-            let keys = Object.keys(jugadoresData);
-            let idxActual = keys.indexOf(String(turnoActual));
-
-            // 4. Bucle de verificación: Buscamos al siguiente que esté ONLINE
-            let siguienteIdx = idxActual;
+            turnoActual = Number(tSnap.val());
+            
+            // 2. Buscamos el siguiente índice en un círculo
+            let idxActual = idsJugadores.indexOf(String(turnoActual));
             let encontrado = false;
             let intentos = 0;
 
-            while (intentos < keys.length) {
-                siguienteIdx = (siguienteIdx + 1) % keys.length;
-                let candidato = keys[siguienteIdx];
+            // Intentamos buscar el siguiente jugador hasta 5 veces (para evitar bucles infinitos)
+            while (!encontrado && intentos < idsJugadores.length) {
+                idxActual = (idxActual + 1) % idsJugadores.length;
+                let siguienteIdx = idsJugadores[idxActual];
 
-                // VERIFICACIÓN: ¿Está online?
-                if (jugadoresData[candidato].online === true) {
-                    // ¡Encontrado!
+                // 3. LA VERIFICACIÓN CRÍTICA:
+                // Solo aceptamos el turno si el jugador existe Y está online
+                if (jugadoresData[siguienteIdx] && jugadoresData[siguienteIdx].online === true) {
+                    db.ref('salas/' + sala + '/turno').set(Number(siguienteIdx));
                     encontrado = true;
-                    // Aquí asignamos el turno
-                    if (jugadoresData[candidato].enCarcel > 0) {
-                         // Lógica de cárcel si es necesario...
-                         db.ref('salas/' + sala + '/jugadores/' + candidato)
-                           .update({ enCarcel: jugadoresData[candidato].enCarcel - 1 });
-                    }
-                    db.ref('salas/' + sala + '/turno').set(Number(candidato));
-                    break;
                 }
                 intentos++;
             }
 
             if (!encontrado) {
-                console.log("No hay nadie más conectado en la sala.");
+                console.log("No se encontró ningún jugador online para pasar el turno.");
             }
         });
     });
