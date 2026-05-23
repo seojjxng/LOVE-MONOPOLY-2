@@ -302,9 +302,6 @@ function mostrarNotificacionMision(titulo) {
     document.getElementById('msg-mision').innerText = titulo;
     document.getElementById('modal-mision-completada').style.display = 'block';
 }
-
-        completarMision('inversorInicial', 200); 
-mostrarNotificacionMision("¡Inversor Inicial alcanzado!");
         
     function verificarBancarrota(jugadorIdx, saldo) {
         if (saldo < 0) {
