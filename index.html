@@ -344,7 +344,7 @@ function pagarPenalidad() {
     let btn = document.getElementById('btn-unirse');
     if (btn) btn.disabled = true;
 
-    // 2. Usamos .transaction o .once para asegurar que el índice sea único
+    // 2. Usamos .once para asegurar que el índice sea único
     db.ref('salas/' + sala + '/jugadores').once('value', snap => {
         miIdx = snap.numChildren();
         
@@ -353,20 +353,21 @@ function pagarPenalidad() {
         
         let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
         
-        // 3. Crear el jugador
+        // 3. Crear el jugador y marcarlo como ONLINE
         jugadorRef.set({
             pos: 0,
             dinero: 1000,
             enCarcel: 0,
-            nombre: miNombre, // Es mejor guardar el nombre en Firebase
+            nombre: miNombre,
             tienePrestamo: false,
-            montoPrestamo: 0
+            montoPrestamo: 0,
+            online: true // <--- Marcamos que está presente
         }).then(() => {
-            // 4. Configurar eventos de desconexión
-            jugadorRef.onDisconnect().remove();
+            // 4. Configurar eventos de desconexión (cambiar a false si se va)
+            jugadorRef.onDisconnect().update({ online: false });
             
             let mensajeRef = db.ref('salas/' + sala + '/chat').push(); 
-            mensajeRef.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " ha abandonado." });
+            mensajeRef.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
 
             // 5. Lógica de inicio de sala
             if (miIdx === 0) {
@@ -382,8 +383,6 @@ function pagarPenalidad() {
             // 6. Iniciar sincronización
             sincronizar();
             
-            // --- NUEVA LÍNEA AÑADIDA AQUÍ ---
-            // Esto dibujará el botón de configuración si eres el jugador 0
             if (typeof renderizarInterfaz === 'function') renderizarInterfaz();
 
         }).catch(error => {
@@ -393,7 +392,6 @@ function pagarPenalidad() {
         });
     });
 }
-
         function obtenerAlquilerFerrocarril(dueñoIdx, todasLasPropiedades) {
     const indicesTransporte = [8, 24, 26, 27];
     let cantidad = 0;
@@ -985,9 +983,13 @@ function verPropiedad(pos, esCaida = false) {
         const jugadoresData = snap.val();
         if (!jugadoresData) return;
 
-        // Convertimos las claves de Firebase (0, 1, 2, 3...) a un array de números
-        let indicesPresentes = Object.keys(jugadoresData).map(Number);
+        // FILTRO NUEVO: Convertimos solo los que están ONLINE
+        let indicesPresentes = Object.keys(jugadoresData)
+            .filter(idx => jugadoresData[idx].online === true) // <--- ESTO ES LA CLAVE
+            .map(Number);
         
+        if (indicesPresentes.length === 0) return; // Nadie conectado
+
         // 3. Obtener el turno actual
         db.ref('salas/' + sala + '/turno').once('value', tSnap => {
             let turnoActual = Number(tSnap.val());
@@ -1003,16 +1005,15 @@ function verPropiedad(pos, esCaida = false) {
             let jugadorSiguiente = jugadoresData[nuevoTurno];
             
             if (jugadorSiguiente && jugadorSiguiente.enCarcel > 0) {
-                log(nombres[nuevoTurno] + " está en la cárcel.");
+                log(jugadorSiguiente.nombre + " está en la cárcel.");
                 db.ref('salas/' + sala + '/jugadores/' + nuevoTurno)
                   .update({ enCarcel: jugadorSiguiente.enCarcel - 1 });
                 
-                // Si está en la cárcel, volvemos a llamar a pasarTurno para saltar al siguiente
-                // O forzamos el salto al siguiente de la lista
+                // Saltamos al siguiente de la lista
                 let turnoTrasCárcel = (siguienteIdx + 1) % indicesPresentes.length;
                 db.ref('salas/' + sala + '/turno').set(indicesPresentes[turnoTrasCárcel]);
             } else {
-                // Paso de turno normal
+                // Paso de turno normal a un jugador que está ONLINE
                 db.ref('salas/' + sala + '/turno').set(nuevoTurno);
             }
         });
