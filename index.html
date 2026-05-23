@@ -32,8 +32,6 @@
         .card-property { border: 2px solid #c71585; padding: 10px; border-radius: 5px; background: white; margin-bottom: 10px; }
         .card-header { background: #ff80bf; color: white; padding: 5px; font-weight: bold; margin-bottom: 10px; }
         .empty-debt { padding: 10px; background: #fff; border: 1px solid #ff80bf; border-radius: 10px; color: #ff59aa; font-weight: bold; }
-        .weather-alert { background: #e3f2fd !important; border: 3px solid #2196f3 !important; }
-        .weather-title { color: #1976d2; font-size: 18px; font-weight: bold; margin-bottom: 10px; }
         #banco-container { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; background: #fff0f9; border: 2px solid #ffccd5; border-radius: 20px; padding: 15px; gap: 10px; }
         /* Posicionamiento de las 29 casillas */
         #cell-0 { grid-column: 1; grid-row: 1; } #cell-1 { grid-column: 2; grid-row: 1; } #cell-2 { grid-column: 3; grid-row: 1; } #cell-3 { grid-column: 4; grid-row: 1; } #cell-4 { grid-column: 5; grid-row: 1; } #cell-5 { grid-column: 6; grid-row: 1; } #cell-6 { grid-column: 7; grid-row: 1; } #cell-7 { grid-column: 8; grid-row: 1; }
@@ -108,64 +106,22 @@
         {n:"PLAYA LOCAL",p:950},{n:"PARADA",p:0},{n:"AEREOPUERTO",p:1000},{n:"TREN",p:1200},{n:"METRO",p:1300}
     ];
 
-         function crearCasillasDOM() {
-    const board = document.getElementById('board');
-    for (let i = 0; i < 29; i++) {
-        let div = document.createElement('div');
-        div.className = 'cell';
-        div.id = 'cell-' + i;
-        div.onclick = () => manejarCasilla(i);
-
-        // 1. Buscamos el grupo y definimos el estilo
-        let grupo = obtenerGrupo(i);
-        let colorStyle = grupo ? `background-color: ${grupo.color} !important;` : 'display: none;';
-
-        // 2. Asignamos el HTML con el estilo ya integrado
-        div.innerHTML = `
-            <div class="strip" style="${colorStyle}"></div>
-            <span>${mapa[i].n}</span>
-            <div class="house-container" id="houses-${i}"></div>
-        `;
-
-        // 3. Añadimos el div al tablero UNA sola vez
-        board.appendChild(div);
-    }
-}
-crearCasillasDOM();
-
     // Variables de clima ampliadas
     const climas = [
-    {n: "Primavera Soleada", mult: 1.0, tipo: "normal"},
-    {n: "Verano Caluroso", mult: 1.0, tipo: "normal"},
-    {n: "Otoño Fresco", mult: 1.0, tipo: "normal"},
-    {n: "Ventisca", mult: 0.5, tipo: "evento"}, // Penalización 50%
-    {n: "Alerta de Tornado", mult: 0.2, tipo: "evento"}, // Penalización 80%
-    {n: "Lluvia Torrencial", mult: 0.7, tipo: "evento"}, // Penalización 30%
-    {n: "Nevada Extrema", mult: 0.4, tipo: "evento"}  // Penalización 60%
-];
+        {n: "Lluvia Ligera", mult: 1.0}, {n: "Tormenta", mult: 1.0},
+        {n: "Ventisca", mult: 1.0}, {n: "Nevada Suave", mult: 1.0},
+        {n: "Primavera Soleada", mult: 1.0}, {n: "Primavera Lluviosa", mult: 1.0},
+        {n: "Verano Caluroso", mult: 1.0}, {n: "Verano Nublado", mult: 1.0},
+        {n: "Otoño Fresco", mult: 1.0}, {n: "Otoño Ventoso", mult: 1.0}
+    ];
 
     function iniciarRelojClima() {
-    setInterval(() => {
-        let nuevoClima = Math.floor(Math.random() * climas.length);
-        db.ref('salas/' + sala + '/clima').set(nuevoClima);
-        log("📢 ALERTA: El clima ha cambiado a " + climas[nuevoClima].n);
-        
-        // Sincronizar anuncio para todos los jugadores
-        db.ref('salas/' + sala + '/anuncioClima').set(nuevoClima);
-    }, 600000); // 10 minutos
-}
-
-        function anunciarClima(idx) {
-    let clima = climas[idx];
-    let modal = document.getElementById('modal');
-    document.getElementById('modal-title').innerText = "🌦️ Pronóstico del Tiempo";
-    document.getElementById('modal-text').innerHTML = `<div class="weather-title">${clima.n}</div>` + 
-        (clima.tipo === "evento" ? "¡Atención! Debido al clima extremo, las ganancias de alquiler se redujeron." : "Un día tranquilo en Naeun Town.");
-    modal.className = "weather-alert"; // Aplicamos estilo CSS
-    modal.style.display = 'block';
-    
-    setTimeout(() => { modal.style.display = 'none'; modal.className = ""; }, 5000);
-}
+        setInterval(() => {
+            let nuevoClima = Math.floor(Math.random() * climas.length);
+            db.ref('salas/' + sala + '/clima').set(nuevoClima);
+            log("¡El clima ha cambiado a " + climas[nuevoClima].n + "!");
+        }, 600000);
+    }
 
     let alquilerPendiente = null;
     let turnosSeis = 0;
@@ -278,67 +234,64 @@ crearCasillasDOM();
     }
 
    function verPropiedad(pos, esCaida = false) {
-    let p = mapa[pos];
-    if (p.p === 0) return;
-    let extra = document.getElementById('modal-extra'); 
-    extra.innerHTML = "";
-    
-    db.ref('salas/' + sala).once('value', snap => {
-        let data = snap.val();
-        // Declaramos la variable UNA SOLA VEZ aquí
-        let multClima = (data.clima !== undefined) ? climas[data.clima].mult : 1.0;
+        let p = mapa[pos];
+        if (p.p === 0) return;
+        let extra = document.getElementById('modal-extra'); extra.innerHTML = "";
         
-        let porcentajes = [0.10, 0.15, 0.20, 0.30, 0.40, 0.50];
-        let nivelesNombres = ["Base", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
-        let listaAlquileres = "";
-        
-        porcentajes.forEach((porc, i) => {
-            listaAlquileres += `<li>${nivelesNombres[i]}: $${Math.floor(p.p * porc * multClima)}</li>`;
-        });
+        db.ref('salas/' + sala).once('value', snap => {
+            let data = snap.val();
+            let prop = data.propiedades ? data.propiedades[pos] : null;
+            let multClima = data.clima !== undefined ? climas[data.clima].mult : 1.0;
+            
+            document.getElementById('modal-title').innerText = "Tarjeta de Propiedad";
+            let porcentajes = [0.10, 0.15, 0.20, 0.30, 0.40, 0.50];
+            let nivelesNombres = ["Base", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
+            let listaAlquileres = "";
+            porcentajes.forEach((porc, i) => {
+                listaAlquileres += `<li>${nivelesNombres[i]}: $${Math.floor(p.p * porc * multClima)}</li>`;
+            });
 
-        let niveles = ["Ninguna", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
-        let prop = data.propiedades ? data.propiedades[pos] : null;
-        
-        let htmlCard = `<div class="card-property">
-            <div class="card-header">${p.n}</div>
-            <p>Valor de compra: <b>$${p.p}</b></p>`;
-        
-        if (!prop) {
-            htmlCard += `<p>Estado: <b>Disponible</b></p>`;
-            if(esCaida) extra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar</button>`;
-        } else if (prop.owner === miIdx) {
-            htmlCard += `<p>Dueño: <b>Tú</b></p><p>Nivel: <b>${niveles[prop.nivel || 0]}</b></p>
-                         <p>Estado: <b>${prop.hipotecada ? "Hipotecada" : "Activa"}</b></p>`;
-            if (!prop.hipotecada) {
-                if (prop.nivel < 5) extra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
-                extra.innerHTML += `<button class="btn" style="background: #ad0c0c;" onclick="hipotecar(${pos})">Hipotecar (+$${Math.floor(p.p/2)})</button>`;
+            let niveles = ["Ninguna", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
+            let htmlCard = `<div class="card-property">
+                <div class="card-header">${p.n}</div>
+                <p>Valor de compra: <b>$${p.p}</b></p>`;
+            
+            if (!prop) {
+                htmlCard += `<p>Estado: <b>Disponible</b></p>`;
+                if(esCaida) extra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar</button>`;
+            } else if (prop.owner === miIdx) {
+                htmlCard += `<p>Dueño: <b>Tú</b></p><p>Nivel: <b>${niveles[prop.nivel || 0]}</b></p>
+                             <p>Estado: <b>${prop.hipotecada ? "Hipotecada" : "Activa"}</b></p>`;
+                if (!prop.hipotecada) {
+                    if (prop.nivel < 5) extra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
+                    extra.innerHTML += `<button class="btn" style="background: #ad0c0c;" onclick="hipotecar(${pos})">Hipotecar (+$${Math.floor(p.p/2)})</button>`;
+                } else {
+                    extra.innerHTML += `<button class="btn" onclick="liberar(${pos})">Liberar (-$${Math.floor(p.p*0.6)})</button>`;
+                }
             } else {
-                extra.innerHTML += `<button class="btn" onclick="liberar(${pos})">Liberar (-$${Math.floor(p.p*0.6)})</button>`;
-            }
-        } else {
-            if(prop.hipotecada) {
-                htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b> (Hipotecada)</p>`;
-            } else {
-                let alquilerActual = Math.floor(p.p * porcentajes[prop.nivel || 0] * multClima);
-                htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>
-                             <p>Alquiler actual: <b>$${alquilerActual}</b></p>
-                             <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios:</b></p>
-                             <ul style="font-size: 10px; padding-left: 15px; margin: 0;">${listaAlquileres}</ul>`;
-                
-                if(esCaida && prop.owner !== miIdx) {
-                    alquilerPendiente = {a: prop.owner, m: alquilerActual};
-                    extra.innerHTML = `
-                        <button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alquilerActual})">Pagar Alquiler</button>
-                        <button class="btn" style="background:#ff80bf" onclick="intentarEvasion(${miIdx}, ${prop.owner}, ${alquilerActual})">Intentar Evasión</button>
-                    `;
+                if(prop.hipotecada) {
+                    htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b> (Hipotecada)</p>`;
+                } else {
+                    let alquilerActual = Math.floor(p.p * porcentajes[prop.nivel || 0] * multClima);
+                    htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>
+                                 <p>Alquiler actual: <b>$${alquilerActual}</b></p>
+                                 <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios (Clima: ${data.clima !== undefined ? climas[data.clima].n : '-'}):</b></p>
+                                 <ul style="font-size: 10px; padding-left: 15px; margin: 0;">${listaAlquileres}</ul>`;
+                    
+                    if(esCaida && prop.owner !== miIdx) {
+                        alquilerPendiente = {a: prop.owner, m: alquilerActual};
+                        extra.innerHTML = `
+                            <button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alquilerActual})">Pagar Alquiler</button>
+                            <button class="btn" style="background:#ff80bf" onclick="intentarEvasion(${miIdx}, ${prop.owner}, ${alquilerActual})">Intentar Evasión</button>
+                        `;
+                    }
                 }
             }
-        }
-        htmlCard += `</div>`;
-        document.getElementById('modal-text').innerHTML = htmlCard;
-        document.getElementById('modal').style.display = 'block';
-    });
-}
+            htmlCard += `</div>`;
+            document.getElementById('modal-text').innerHTML = htmlCard;
+            document.getElementById('modal').style.display = 'block';
+        });
+    }
 
     function hipotecar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: true}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + Math.floor(mapa[pos].p/2)); log(nombres[miIdx] + " hipotecó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
     function liberar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: false}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d - Math.floor(mapa[pos].p*0.6)); log(nombres[miIdx] + " liberó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
@@ -513,50 +466,25 @@ crearCasillasDOM();
 }                                                                                           
                                                                                                        
     function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
-    function verSaldos() { 
-        db.ref('salas/' + sala + '/jugadores').once('value', snap => { 
-            let txt = ""; 
-            snap.forEach(c => { 
-                txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; 
-            }); 
-            document.getElementById('modal-title').innerText = "Saldos"; 
-            document.getElementById('modal-text').innerHTML = txt; 
-            document.getElementById('modal').style.display = 'block'; 
-        }); 
-    }
-        
-        
+    function verSaldos() { db.ref('salas/' + sala + '/jugadores').once('value', snap => { let txt = ""; snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); document.getElementById('modal-title').innerText = "Saldos"; document.getElementById('modal-text').innerHTML = txt; document.getElementById('modal').style.display = 'block'; }); }
+    function enviarChat() { let msg = document.getElementById('chat-msg').value; db.ref('salas/' + sala + '/chat').push({ n: nombres[miIdx], m: msg }); document.getElementById('chat-msg').value = ""; }
+    
     function sincronizar() { 
+        escucharOfertas();
         db.ref('salas/' + sala).on('value', snap => { 
-            let s = snap.val(); 
-            if(!s) return; 
-            document.getElementById('dinero-mio').innerText = s.jugadores[miIdx]?.dinero || 0;
-            document.getElementById('turno-text').innerText = "Turno: " + (nombres[s.turno] || "Esperando...");
-            
-            if(s.clima !== undefined) { 
-                let c = climas[s.clima]; 
-                if(c) document.getElementById('clima-display').innerText = "Estación: " + c.n; 
-            }
-
-            if(s.jugadores) {
-                s.jugadores.forEach((j, i) => { 
-                    let el = document.getElementById('p' + i); 
-                    if (el) {
-                        el.style.display = 'block'; 
-                        let cell = document.getElementById('cell-' + j.pos); 
-                        if (cell) {
-                            el.style.left = (cell.offsetLeft + 10) + 'px'; 
-                            el.style.top = (cell.offsetTop + 10) + 'px'; 
-                        }
-                    }
-                });
-            }
-        }); 
-    }
+            let s = snap.val(); if(!s) return; 
+            document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
+            document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
+            if(s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n; }
+            s.jugadores.forEach((j, i) => { 
+                let el = document.getElementById('p' + i); el.style.display = 'block'; 
+                let cell = document.getElementById('cell-' + j.pos); 
+                el.style.left = (cell.offsetLeft + 30) + 'px'; el.style.top = (cell.offsetTop + 30) + 'px'; 
+            });
             if(s.propiedades) { Object.keys(s.propiedades).forEach(pos => { 
                 let cell = document.getElementById('cell-' + pos);
                 if(cell) {
-                    cell.style.border = "2px solid " + (s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner]);
+                    cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner];
                     let hc = cell.querySelector('.house-container'); hc.innerHTML = "";
                     let nivel = s.propiedades[pos].nivel || 0;
                     if(nivel > 0 && nivel < 5) { for(let i=0; i<nivel; i++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
@@ -582,5 +510,3 @@ crearCasillasDOM();
 </script>
 </body>
 </html>
-
-
