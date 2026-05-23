@@ -29,15 +29,7 @@
 }
         .cell { background: white; border: 2px solid #ffccd5; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; color: #c71585; text-align: center; position: relative; cursor: pointer; }
         
-        .strip { 
-    width: 100%; 
-    height: 10px; 
-    position: absolute; 
-    top: 0; 
-    left: 0; /* Asegúrate de que esté alineado */
-    border-top-left-radius: 8px; 
-    border-top-right-radius: 8px; 
-}
+        .strip { width: 100%; height: 10px; position: absolute; top: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; }
         .house-container { position: absolute; bottom: 2px; display: flex; gap: 1px; }
         .house { width: 8px; height: 8px; background: #ff59aa; }
         .hotel { width: 20px; height: 8px; background: #c71585; }
@@ -192,19 +184,18 @@
     const nombres = ["Dog", "Horse", "Hat", "Car"];
     const colores = ["#ffb7b2", "#ffd8a8", "#b2f2bb", "#a5d8ff"];
 
-        // 1. DEFINICIONES BASE (Seguras)
+        // Configuración de colores por grupo
     const grupos = [
-        { id: 'grupo1', color: "#ff80bf", indices: [1, 3, 4, 5] },
-        { id: 'grupo2', color: "#a5d8ff", indices: [7, 10, 11, 13] },
-        { id: 'grupo3', color: "#b2f2bb", indices: [14, 15, 16, 17] },
-        { id: 'grupo4', color: "#ffd8a8", indices: [19, 20, 21, 24] },
-        { id: 'grupo5', color: "#eebafa", indices: [25, 27, 28] },
-        { id: 'ferrocarriles', color: 'transparent', indices: [8, 22, 26, 27] } 
-    ];
+    {color: "#ff80bf", indices: [1, 3, 4, 5]},
+    {color: "#a5d8ff", indices: [7, 10, 11, 13]},
+    {color: "#b2f2bb", indices: [14, 15, 16, 17]},
+    {color: "#ffd8a8", indices: [19, 20, 21, 24]},
+    {color: "#eebafa", indices: [25, 27, 28]} 
+];
 
-    function obtenerGrupo(pos) {
-        return grupos.find(g => g.indices.includes(pos));
-    }
+        function obtenerGrupo(pos) {
+    return grupos.find(g => g.indices.includes(pos));
+}
         
     const mapa = [
     {n:"SALIDA",p:0},{n:"ITAEWON",p:100},{n:"ARCA",p:0},{n:"BUSAN",p:200},
@@ -536,17 +527,24 @@ function mostrarNotificacionMision(titulo) {
         let modalTitle = document.getElementById('modal-title');
         let modalText = document.getElementById('modal-text');
         let modalExtra = document.getElementById('modal-extra');
+
         modalTitle.innerText = "🏦 Banco Central";
         
         if (j.tienePrestamo) {
             modalText.innerHTML = `<p>Tienes un préstamo activo de: <b>$${j.montoPrestamo}</b></p>`;
-            modalExtra.innerHTML = `<button class="btn" onclick="pagarPrestamo()">Liquidar Deuda</button> <button class="btn" onclick="cerrarModal()">Cerrar</button>`;
+            modalExtra.innerHTML = `<button class="btn" onclick="pagarPrestamo()">Liquidar Deuda</button>
+                                    <button class="btn" onclick="cerrarModal()">Cerrar</button>`;
         } else {
             let html = `<p>Tu saldo: <b>$${j.dinero}</b></p><p>Selecciona un monto para tu préstamo:</p>`;
-            // Ejemplo de botones de préstamo
-            html += `<button class="btn" onclick="solicitarPrestamo(300)">$300</button>
-                     <button class="btn" onclick="solicitarPrestamo(500)">$500</button>`;
             modalText.innerHTML = html;
+            
+            // Botones de montos
+            let montos = [300, 500, 700, 900];
+            modalExtra.innerHTML = "";
+            montos.forEach(m => {
+                modalExtra.innerHTML += `<button class="btn" onclick="pedirPrestamo(${m})">$${m}</button> `;
+            });
+            
         }
         document.getElementById('modal').style.display = 'block';
     });
@@ -1079,33 +1077,24 @@ function mostrarNotificacionMision(titulo) {
         enviarChat();
     }
 });
-
-
-    // 2. INICIALIZACIÓN POR SEPARADO
+     
     window.addEventListener('DOMContentLoaded', () => {
-        // A. Dibujar Tablero
-        try {
-            const board = document.getElementById('board');
-            if (board) {
-                mapa.forEach((m, i) => {
-                    const d = document.createElement('div');
-                    d.className = 'cell';
-                    d.id = 'cell-' + i;
-                    d.onclick = () => verPropiedad(i);
-                    let g = obtenerGrupo(i);
-                    let strip = (g && g.color !== 'transparent') ? `<div class="strip" style="background:${g.color}"></div>` : '';
-                    d.innerHTML = `${strip}<div class="contenido">${m.n}<br>${m.p > 0 ? '$' + m.p : ''}</div>`;
-                    board.appendChild(d);
-                });
-            }
-        } catch (e) { console.error("Error al dibujar tablero:", e); }
-
-        // B. INICIALIZAR DADOS, CLIMA Y DEMÁS
-        // Si tienes funciones como inicializarDados() o iniciarClima(), ponlas aquí abajo
-        try {
-            if (typeof iniciarDados === 'function') iniciarDados();
-            if (typeof actualizarClima === 'function') actualizarClima();
-        } catch (e) { console.error("Error al cargar extras:", e); }
+    // 1. Dibujar el tablero
+    mapa.forEach((m, i) => { 
+        const d = document.createElement('div'); 
+        d.className = 'cell'; 
+        d.id = 'cell-' + i; 
+        d.onclick = () => verPropiedad(i);
+        
+        let g = obtenerGrupo(i);
+        d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+                       ${m.n}<br>
+                       ${m.p > 0 ? '$' + m.p : ''}
+                       <div class="house-container"></div>`;
+        document.getElementById('board').appendChild(d); 
+    });
+        
+         
     });
 </script>
 </body>
