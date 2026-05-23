@@ -170,12 +170,16 @@
     ];
 
     // Variables de clima ampliadas
-    const climas = [
-        {n: "Lluvia Ligera", mult: 1.0}, {n: "Tormenta", mult: 1.0},
-        {n: "Ventisca", mult: 1.0}, {n: "Nevada Suave", mult: 1.0},
+   const climas = [
         {n: "Primavera Soleada", mult: 1.0}, {n: "Primavera Lluviosa", mult: 1.0},
         {n: "Verano Caluroso", mult: 1.0}, {n: "Verano Nublado", mult: 1.0},
-        {n: "Otoño Fresco", mult: 1.0}, {n: "Otoño Ventoso", mult: 1.0}
+        {n: "Otoño Fresco", mult: 1.0}, {n: "Otoño Ventoso", mult: 1.0},
+        // Climas adversos que reducen alquiler (porcentaje azar entre 50% y 80%)
+        {n: "Lluvia Fuerte", mult: 0.7}, 
+        {n: "Tormenta Eléctrica", mult: 0.5},
+        {n: "Ventisca", mult: 0.6}, 
+        {n: "Nevada Intensa", mult: 0.6},
+        {n: "Tornado", mult: 0.5}
     ];
 
     function iniciarRelojClima() {
@@ -358,24 +362,26 @@
                     extra.innerHTML += `<button class="btn" onclick="liberar(${pos})">Liberar (-$${Math.floor(p.p*0.6)})</button>`;
                 }
             } else {
+                let alquilerBase = Math.floor(p.p * porcentajes[prop ? prop.nivel || 0 : 0]);
+            let alquilerFinal = Math.floor(alquilerBase * multClima);
+                
                 if(prop.hipotecada) {
                     htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b> (Hipotecada)</p>`;
                 } else {
-                    let alquilerActual = Math.floor(p.p * porcentajes[prop.nivel || 0] * multClima);
                     htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>
-                                 <p>Alquiler actual: <b>$${alquilerActual}</b></p>
-                                 <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios (Clima: ${data.clima !== undefined ? climas[data.clima].n : '-'}):</b></p>
-                                 <ul style="font-size: 10px; padding-left: 15px; margin: 0;">${listaAlquileres}</ul>`;
+                     <p>Alquiler actual: <b>$${alquilerFinal}</b></p>
+                     <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios (Clima: ${data.clima !== undefined ? climas[data.clima].n : '-'}):</b></p>
+                     <ul style="font-size: 10px; padding-left: 15px; margin: 0;">${listaAlquileres}</ul>`;
                     
                     if(esCaida && prop.owner !== miIdx) {
-                        alquilerPendiente = {a: prop.owner, m: alquilerActual};
-                        extra.innerHTML = `
-                            <button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alquilerActual})">Pagar Alquiler</button>
-                            <button class="btn" style="background:#ff80bf" onclick="intentarEvasion(${miIdx}, ${prop.owner}, ${alquilerActual})">Intentar Evasión</button>
-                        `;
-                    }
-                }
-            }
+            alquilerPendiente = {a: prop.owner, m: alquilerFinal}; // Usamos el final
+            extra.innerHTML = `
+                <button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alquilerFinal})">Pagar Alquiler</button>
+                <button class="btn" style="background:#ff80bf" onclick="intentarEvasion(${miIdx}, ${prop.owner}, ${alquilerFinal})">Intentar Evasión</button>
+            `;
+        }
+    }
+}
             htmlCard += `</div>`;
             document.getElementById('modal-text').innerHTML = htmlCard;
             document.getElementById('modal').style.display = 'block';
