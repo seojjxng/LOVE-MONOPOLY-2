@@ -1072,28 +1072,30 @@ function mostrarNotificacionMision(titulo) {
 }
      
     window.addEventListener('DOMContentLoaded', () => {
-        console.log("¡El DOM ha cargado! Iniciando tablero...");
-        
-        // 1. Dibujar el tablero
-        mapa.forEach((m, i) => { 
-            const d = document.createElement('div'); 
-            d.className = 'cell'; 
-            d.id = 'cell-' + i; 
-            d.onclick = () => verPropiedad(i);
-            
-            let g = obtenerGrupo(i);
-            d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
-                           ${m.n}<br>
-                           ${m.p > 0 ? '$' + m.p : ''}
-                           <div class="house-container"></div>`;
-            document.getElementById('board').appendChild(d); 
-        });
-
+    console.log("Iniciando tablero...");
     
-        sincronizar(); 
-        escucharOfertas();
-        
+    // 1. Dibujar tablero
+    mapa.forEach((m, i) => { 
+        const d = document.createElement('div'); 
+        d.className = 'cell'; 
+        d.id = 'cell-' + i; 
+        d.onclick = () => verPropiedad(i);
+        let g = obtenerGrupo(i);
+        d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+                       ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}<div class="house-container"></div>`;
+        document.getElementById('board').appendChild(d); 
     });
+
+    // 2. Verificar que las funciones existen antes de llamarlas
+    if (typeof sincronizar === 'function') {
+        sincronizar();
+    }
+    if (typeof escucharOfertas === 'function') {
+        escucharOfertas();
+    } else {
+        console.error("¡ERROR: escucharOfertas no está definida antes de ser llamada!");
+    }
+});
 </script>
 </body>
 </html>
