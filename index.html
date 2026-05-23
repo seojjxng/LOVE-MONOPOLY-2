@@ -875,9 +875,10 @@ function mostrarNotificacionMision(titulo) {
                     mostrarNotificacionMision(mensajes[m]);
                     // Limpiamos el aviso para que no se repita
                     db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
-               }
-            }
-        });  
+             }
+        }
+    }); // Cierra el .on('value')
+}
      
     mapa.forEach((m, i) => { 
     const d = document.createElement('div'); 
