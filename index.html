@@ -1624,17 +1624,17 @@ window.iniciarJuegoConfirmado = function() {
 
 // --- INICIALIZACIÓN DEL SISTEMA ---
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. Renderizado inicial
+    // 1. Renderizado inicial del tablero
     if (typeof renderizarTablero === 'function') {
         renderizarTablero();
     }
 
-    // 2. Intentar unirse si hay sala guardada
+    // 2. Auto-unión si ya existe una sala en sesión
     if (sessionStorage.getItem('salaActual')) {
         window.unirse();
     }
 
-    // 3. Listener del chat (Único)
+    // 3. Listener ÚNICO para el chat (evita duplicidades)
     const chatInput = document.getElementById('chat-msg');
     if (chatInput) {
         chatInput.addEventListener('keypress', (e) => {
