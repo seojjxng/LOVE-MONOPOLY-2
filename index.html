@@ -564,62 +564,56 @@ function pagarPenalidad() {
 }
     
     function tirarDado() { 
-    if(miIdx === -1) return;
-    
-    db.ref('salas/' + sala).once('value', snap => {
-        let s = snap.val(); 
-        if(s.turno !== miIdx || s.jugadores[miIdx].enCarcel > 0) return;
+        if(miIdx === -1) return;
         
-        // 1. Lógica de clima
-        if (s.clima === undefined) {
-            let climaInicial = Math.floor(Math.random() * climas.length);
-            db.ref('salas/' + sala + '/clima').set(climaInicial);
-            let mult = climas[climaInicial].mult;
-            let mensaje = "¡El clima inicial es " + climas[climaInicial].n + "! " + (mult < 1.0 ? "Descuento del " + Math.round((1 - mult) * 100) + "%." : "Precio normal.");
-            log(mensaje);
-        }
-
-        // 2. Cálculo del dado y contador
-        let dado = Math.floor(Math.random() * 6) + 1;
-        document.getElementById('dado-valor').innerText = dado;
-        let contadorActual = s.jugadores[miIdx].seisSeguidos || 0;
-        let nuevoContador = (dado === 6) ? contadorActual + 1 : 0;
-
-        // 3. Movimiento
-        let posActual = Number(s.jugadores[miIdx].pos);
-        let nuevaPos = (posActual + dado) % mapa.length;
-        
-        if (nuevaPos < posActual) { 
-            db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + 200); 
-            log(nombres[miIdx] + " pasó por SALIDA y cobró $200."); 
-        }
-
-        // 4. Lógica de Penalización o Movimiento
-        if (nuevoContador === 3) {
-            log("¡ACUSACIÓN DE FRAUDE! " + nombres[miIdx] + " sacó tres 6 seguidos.");
-            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
-                pos: 8, 
-                enCarcel: 2, 
-                seisSeguidos: 0 
-            });
-            gestionarFraude();
-            pasarTurno();
-            setTimeout(() => manejarCasilla(8), 600);
-        } else {
-            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
-                pos: nuevaPos, 
-                seisSeguidos: nuevoContador 
-            });
-
-            if (dado === 6) {
-                log("¡Sacaste un 6! Tienes turno extra.");
-            } else {
-                pasarTurno();
+        db.ref('salas/' + sala).once('value', snap => {
+            let s = snap.val(); 
+            if(s.turno !== miIdx || s.jugadores[miIdx].enCarcel > 0) return;
+            
+            // 1. Lógica de clima
+            if (s.clima === undefined) {
+                let climaInicial = Math.floor(Math.random() * climas.length);
+                db.ref('salas/' + sala + '/clima').set(climaInicial);
+                let mult = climas[climaInicial].mult;
+                let mensaje = "¡El clima inicial es " + climas[climaInicial].n + "! " + (mult < 1.0 ? "Descuento del " + Math.round((1 - mult) * 100) + "%." : "Precio normal.");
+                log(mensaje);
             }
-            setTimeout(() => manejarCasilla(nuevaPos), 600);
-        }
-    }); 
-}                                                             
+
+            // 2. Cálculo del dado y contador
+            let dado = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('dado-valor').innerText = dado;
+            
+            let contadorActual = s.jugadores[miIdx].seisSeguidos || 0;
+            let nuevoContador = (dado === 6) ? contadorActual + 1 : 0;
+
+            // 3. Movimiento
+            let posActual = Number(s.jugadores[miIdx].pos);
+            let nuevaPos = (posActual + dado) % mapa.length;
+            
+            if (nuevaPos < posActual) { 
+                db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + 200); 
+                log(nombres[miIdx] + " pasó por SALIDA y cobró $200."); 
+            }
+
+            // 4. Lógica de Penalización o Movimiento
+            if (nuevoContador === 3) {
+                log("¡ACUSACIÓN DE FRAUDE! " + nombres[miIdx] + " sacó tres 6 seguidos.");
+                db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: 8, enCarcel: 2, seisSeguidos: 0 });
+                gestionarFraude();
+                pasarTurno();
+                setTimeout(() => manejarCasilla(8), 600);
+            } else {
+                db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: nuevaPos, seisSeguidos: nuevoContador });
+
+                if (dado === 6) {
+                    log("¡Sacaste un 6! Tienes turno extra.");
+                } else {
+                    pasarTurno();
+                }
+                setTimeout(() => manejarCasilla(nuevaPos), 600);
+            }
+        }); 
+    }                                            
                                                                                                        
     function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
     function verSaldos() { db.ref('salas/' + sala + '/jugadores').once('value', snap => { let txt = ""; snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); document.getElementById('modal-title').innerText = "Saldos"; document.getElementById('modal-text').innerHTML = txt; document.getElementById('modal').style.display = 'block'; }); }
