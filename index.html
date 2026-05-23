@@ -977,22 +977,49 @@ function verPropiedad(pos, esCaida = false) {
 }
 
         function pasarTurno() {
-    // Si usas esta variable, asegúrate de tenerla declarada (let turnosSeis = 0;)
+    // 1. Resetear el contador de seis si existe
     if (typeof turnosSeis !== 'undefined') turnosSeis = 0;
 
+    // 2. Obtener los jugadores reales conectados en la base de datos
     db.ref('salas/' + sala + '/jugadores').once('value', snap => {
-        let total = snap.numChildren();
+        let jugadores = snap.val();
+        if (!jugadores) return;
+        
+        // Creamos una lista con los índices de los jugadores que realmente existen
+        let indicesJugadores = [];
+        for (let i in jugadores) {
+            indicesJugadores.push(Number(i));
+        }
+        
+        let total = indicesJugadores.length;
+        if (total === 0) return;
+
+        // 3. Obtener el turno actual
         db.ref('salas/' + sala + '/turno').once('value', tSnap => {
             let t = Number(tSnap.val());
-            let nuevoTurno = (t + 1) % total;
             
+            // Buscar la posición actual en nuestro array de jugadores presentes
+            let idxEnArray = indicesJugadores.indexOf(t);
+            
+            // Si el jugador actual no está en la lista (por ejemplo, se salió), empezamos por el primero
+            if (idxEnArray === -1) idxEnArray = 0;
+            
+            // Calcular el siguiente índice dentro de los jugadores presentes
+            let siguienteIdxEnArray = (idxEnArray + 1) % total;
+            let nuevoTurno = indicesJugadores[siguienteIdxEnArray];
+            
+            // 4. Lógica de cárcel: Si el siguiente está en la cárcel, saltar
             db.ref('salas/' + sala + '/jugadores/' + nuevoTurno).once('value', jSnap => {
                 let jugador = jSnap.val();
                 if (jugador && jugador.enCarcel > 0) {
                     log(nombres[nuevoTurno] + " está en la cárcel.");
                     db.ref('salas/' + sala + '/jugadores/' + nuevoTurno).update({ enCarcel: jugador.enCarcel - 1 });
-                    db.ref('salas/' + sala + '/turno').set((nuevoTurno + 1) % total);
+                    
+                    // Saltar al siguiente del siguiente jugador presente
+                    let saltadoIdxEnArray = (siguienteIdxEnArray + 1) % total;
+                    db.ref('salas/' + sala + '/turno').set(indicesJugadores[saltadoIdxEnArray]);
                 } else {
+                    // Pasa el turno normalmente al siguiente jugador presente
                     db.ref('salas/' + sala + '/turno').set(nuevoTurno);
                 }
             });
