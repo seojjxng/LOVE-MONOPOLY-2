@@ -980,36 +980,36 @@ function mostrarNotificacionMision(titulo) {
     escucharOfertas(); 
 }
         
-    function sincronizar() { 
-    // YA NO LLAMAMOS A escucharOfertas() AQUÍ, lo llamaremos solo una vez al iniciar.
-
-    // 1. Sincronización del Chat
-    db.ref('salas/' + sala + '/chat').on('value', snap => {
-        let chatLog = document.getElementById('chat-log');
-        if (!chatLog) return;
-        
-        chatLog.innerHTML = ""; 
-        snap.forEach(msgSnap => {
-            let m = msgSnap.val();
-            let hora = m.t ? `<small style="color:gray;">[${m.t}]</small> ` : "";
-            chatLog.innerHTML += `<div>${hora}<b>${m.n}:</b> ${m.m}</div>`;
-        });
-        chatLog.scrollTop = chatLog.scrollHeight;
-    });
-
-    // 2. Sincronización del Tablero y Estado
+   function sincronizar() { 
+    // PROTECCIÓN CRÍTICA: Si no hay conexión o la sala está vacía, no ejecutamos nada.
+    // Esto evita el error "s.jugadores.forEach is not a function"
     db.ref('salas/' + sala).on('value', snap => { 
         let s = snap.val(); 
-        if(!s) return; 
-
-        document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
-        document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
-        
-        if(s.clima !== undefined) { 
-            let c = climas[s.clima]; 
-            document.getElementById('clima-display').innerText = "Estación: " + c.n; 
+        if (!s || !s.jugadores) {
+            console.log("Esperando datos de la sala...");
+            return; 
         }
 
+        // 1. Sincronización del Chat (ahora integrada dentro del flujo seguro)
+        let chatLog = document.getElementById('chat-log');
+        if (chatLog && s.chat) {
+            chatLog.innerHTML = ""; 
+            Object.values(s.chat).forEach(m => {
+                let hora = m.t ? `<small style="color:gray;">[${m.t}]</small> ` : "";
+                chatLog.innerHTML += `<div>${hora}<b>${m.n}:</b> ${m.m}</div>`;
+            });
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        // 2. Sincronización de Estado y Tablero
+        document.getElementById('dinero-mio').innerText = s.jugadores[miIdx] ? s.jugadores[miIdx].dinero : 0;
+        document.getElementById('turno-text').innerText = "Turno: " + (nombres[s.turno] || "...");
+        
+        if(s.clima !== undefined && climas[s.clima]) { 
+            document.getElementById('clima-display').innerText = "Estación: " + climas[s.clima].n; 
+        }
+
+        // Actualizar posiciones
         s.jugadores.forEach((j, i) => { 
             let el = document.getElementById('p' + i); 
             if(el) {
@@ -1022,11 +1022,12 @@ function mostrarNotificacionMision(titulo) {
             }
         });
 
+        // Actualizar propiedades
         if(s.propiedades) { 
             Object.keys(s.propiedades).forEach(pos => { 
                 let cell = document.getElementById('cell-' + pos);
                 if(cell) {
-                    cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner];
+                    cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : (colores[s.propiedades[pos].owner] || "#fff");
                     let hc = cell.querySelector('.house-container'); 
                     hc.innerHTML = "";
                     let nivel = s.propiedades[pos].nivel || 0;
