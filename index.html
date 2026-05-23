@@ -193,6 +193,7 @@
     {color: "#eebafa", indices: [25, 27, 28]},
     {color: "#f5f5dc", indices: [8, 23, 26]} // ferrocarriles en color crema
 ];
+
         
     const mapa = [
     {n:"SALIDA",p:0},{n:"ITAEWON",p:100},{n:"ARCA",p:0},{n:"BUSAN",p:200},
@@ -203,6 +204,10 @@
     {n:"YG ENT",p:700},{n:"YJP",p:750},{n:"IMPUESTOS",p:0},{n:"HYBE CORP.",p:800},
     {n:"MOTO",p:900},{n:"PARADA",p:0},{n:"AVIÓN",p:1000},{n:"TREN",p:1200}
 ];
+
+        function obtenerGrupo(pos) { 
+    return grupos.find(g => g.indices.includes(pos)); 
+}
 
     // Variables de clima ampliadas
    const climas = [
