@@ -970,6 +970,18 @@ function mostrarNotificacionMision(titulo) {
     
     function sincronizar() { 
         escucharOfertas();
+        db.ref('salas/' + sala + '/chat').on('value', snap => {
+        let chatLog = document.getElementById('chat-log');
+        if (!chatLog) return;
+        
+        chatLog.innerHTML = ""; 
+        snap.forEach(msgSnap => {
+            let m = msgSnap.val();
+            // Asegúrate de que los nombres y mensajes coincidan con tu estructura
+            chatLog.innerHTML += `<div><b>${m.n}:</b> ${m.m}</div>`;
+        });
+        chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll al último mensaje
+    });
         db.ref('salas/' + sala).on('value', snap => { 
             let s = snap.val(); if(!s) return; 
             document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
