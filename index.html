@@ -1096,10 +1096,14 @@ function mostrarNotificacionMision(titulo) {
         d.id = 'cell-' + i; 
         d.onclick = () => verPropiedad(i);
         
-        let g = obtenerGrupo(i);
-let colorFondo = (g && g.color) ? g.color : 'transparent';
+       let g = obtenerGrupo(i);
 
-d.innerHTML = `<div class="strip" style="background: ${colorFondo}"></div>
+// Generamos el strip solo si hay un color definido y no es transparente
+let stripHTML = (g && g.color !== 'transparent') 
+    ? `<div class="strip" style="background: ${g.color}"></div>` 
+    : ''; // Si es ferrocarril (transparente) o no tiene grupo, no creamos nada.
+
+d.innerHTML = `${stripHTML}
                <div class="cell-content">
                    ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}
                </div>
