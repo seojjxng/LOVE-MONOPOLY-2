@@ -1,79 +1,103 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
+<html lang="es"><head>
     <meta charset="UTF-8">
     <title>Monopoly Naeun Town</title>
-</head>
-<body>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body { background: #fff0f3; font-family: 'Montserrat', sans-serif; display: flex; justify-content: center; padding: 20px; color: #c71585; }
+        .container { display: flex; gap: 25px; width: 1000px; }
+        .game-column { display: flex; flex-direction: column; gap: 15px; }
+        .board { display: grid; grid-template-columns: repeat(8, 70px); grid-template-rows: repeat(8, 70px); gap: 5px; background: #ffccd5; padding: 10px; border-radius: 25px; position: relative; }
+        .cell { background: white; border: 2px solid #ffccd5; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; color: #c71585; text-align: center; position: relative; cursor: pointer; }
+        .strip { width: 100%; height: 10px; position: absolute; top: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; }
+        .house-container { position: absolute; bottom: 2px; display: flex; gap: 1px; }
+        .house { width: 8px; height: 8px; background: #ff59aa; }
+        .hotel { width: 20px; height: 8px; background: #c71585; }
+        .token { width: 25px; height: 25px; position: absolute; z-index: 10; transition: all 0.5s ease; pointer-events: none; }
+        .center-zone { grid-column: 3 / 7; grid-row: 3 / 7; background: #fff5f7; border: 3px dashed #ff80bf; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
+        .sidebar { width: 320px; display: flex; flex-direction: column; gap: 20px; }
+        .panel { background: #fff0f9; padding: 20px; border-radius: 20px; border: 2px solid #ffccd5; }
+        .btn { width: 100%; padding: 10px; background: #ff59aa; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin: 5px 0; }
+        #log, #chat-log { height: 125px; overflow-y: auto; font-size: 11px; background: white; border: 1px solid #ffccd5; margin-bottom: 10px; padding: 5px; }
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; z-index: 999; }
+        #cell-0 { grid-column: 1; grid-row: 1; } #cell-1 { grid-column: 2; grid-row: 1; } #cell-2 { grid-column: 3; grid-row: 1; } #cell-3 { grid-column: 4; grid-row: 1; } #cell-4 { grid-column: 5; grid-row: 1; } #cell-5 { grid-column: 6; grid-row: 1; } #cell-6 { grid-column: 7; grid-row: 1; } #cell-7 { grid-column: 8; grid-row: 1; }
+        #cell-8 { grid-column: 8; grid-row: 2; } #cell-9 { grid-column: 8; grid-row: 3; } #cell-10 { grid-column: 8; grid-row: 4; } #cell-11 { grid-column: 8; grid-row: 5; } #cell-12 { grid-column: 8; grid-row: 6; } #cell-13 { grid-column: 8; grid-row: 7; } #cell-14 { grid-column: 8; grid-row: 8; }
+        #cell-15 { grid-column: 7; grid-row: 8; } #cell-16 { grid-column: 6; grid-row: 8; } #cell-17 { grid-column: 5; grid-row: 8; } #cell-18 { grid-column: 4; grid-row: 8; } #cell-19 { grid-column: 3; grid-row: 8; } #cell-20 { grid-column: 2; grid-row: 8; } #cell-21 { grid-column: 1; grid-row: 8; }
+        #cell-22 { grid-column: 1; grid-row: 7; } #cell-23 { grid-column: 1; grid-row: 6; } #cell-24 { grid-column: 1; grid-row: 5; } #cell-25 { grid-column: 1; grid-row: 4; } #cell-26 { grid-column: 1; grid-row: 3; } #cell-27 { grid-column: 1; grid-row: 2; }
+    </style>
+</head><body>
+    <div class="container">
+        <div class="game-column">
+            <div class="board" id="board">
+                <div class="center-zone">
+                    <div id="turno-text" style="font-weight:bold;">ESPERANDO...</div>
+                    <img src="https://i.imgur.com/Nsafzb4.png" style="width:60px; cursor:pointer" onclick="tirarDado()">
+                    <div>💖 $<span id="dinero-mio">1000</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="sidebar">
+            <div class="panel">
+                <strong>Sala</strong><input type="text" id="sala-id" class="input-field">
+                <button class="btn" onclick="unirse()">Entrar</button>
+            </div>
+            <div id="log"></div>
+        </div>
+    </div>
+    <div id="modal"><h3 id="modal-title"></h3><div id="modal-text"></div><div id="modal-extra"></div><button class="btn" onclick="document.getElementById('modal').style.display='none'">Cerrar</button></div>
+
+<script>
+    const firebaseConfig = { databaseURL: "https://monopolovely-default-rtdb.firebaseio.com" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let miIdx = -1, sala = "";
     
-    <script>
-    // 1. CONFIGURACIÓN DE COLORES Y GRUPOS
-    const colores = ['#ffffff', '#ff9aa2', '#c7ceea', '#b5ead7', '#ffdac1']; // Ajusta según tus jugadores
-    const grupos = {
-        0: [1, 3, 4], 
-        1: [5, 7, 9]  
-        // Agrega todos tus sets aquí
-    };
+    // Sistema de grupos definido
+    const grupos = [
+        {color: "#ff80bf", indices: [1, 3, 4, 5]},
+        {color: "#a5d8ff", indices: [7, 9, 10, 12]},
+        {color: "#b2f2bb", indices: [13, 14, 15, 16]},
+        {color: "#ffd8a8", indices: [18, 19, 20, 22]},
+        {color: "#eebafa", indices: [23, 24, 26, 27]}
+    ];
 
-    // 2. LÓGICA DE VERIFICACIÓN DE SET
-    function verificarSetCompleto(propIdx, ownerIdx, todasLasPropiedades) {
-        let grupoID = Object.keys(grupos).find(g => grupos[g].includes(parseInt(propIdx)));
-        if (!grupoID) return true; 
+    const mapa = [
+        {n:"SALIDA",p:0},{n:"ITAEWON",p:100},{n:"ARCA",p:0},{n:"BUSAN",p:200},{n:"SEOCHO",p:250},{n:"GANGNAM",p:300},{n:"?",p:0},{n:"CHEONGDAM",p:400},
+        {n:"CÁRCEL",p:0},{n:"CAFETERÍA",p:500},{n:"RESTAURANTE",p:520},{n:"?",p:0},{n:"SPA",p:300},{n:"CINE",p:350},{n:"HOSPITAL",p:400},{n:"TEATRO",p:500},
+        {n:"ESTADIO",p:550},{n:"ARCA",p:0},{n:"SMENT",p:600},{n:"YG ENT",p:700},{n:"YJP",p:750},{n:"IMPUESTOS",p:0},{n:"PISCINA",p:800},{n:"YATE",p:900},
+        {n:"PLAYA",p:950},{n:"PARADA",p:0},{n:"AEREOPUERTO",p:1000},{n:"TREN",p:1200}
+    ];
 
-        let contadas = 0;
-        grupos[grupoID].forEach(idx => {
-            if (todasLasPropiedades[idx] && todasLasPropiedades[idx].owner === ownerIdx) {
-                contadas++;
-            }
-        });
-        return contadas === 3; 
+    function obtenerGrupo(pos) {
+        return grupos.find(g => g.indices.includes(pos));
     }
 
-    // 3. MODAL DE PROPIEDAD CON RESTRICCIÓN
-    function verPropiedad(pos) {
-        let p = mapa[pos];
-        if (p.p === 0) return;
-        
+    function mejorar(pos) {
         db.ref('salas/' + sala).once('value', snap => {
             let data = snap.val();
-            let props = data.propiedades || {};
-            let prop = props[pos];
-            
-            // Limpia el contenedor de botones antes de renderizar
-            extra.innerHTML = "";
-            
-            if (prop && prop.owner === miIdx) {
-                let tieneSet = verificarSetCompleto(pos, miIdx, props);
-                
-                if (!prop.hipotecada) {
-                    if (prop.nivel < 5) {
-                        if (tieneSet) {
-                            extra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
-                        } else {
-                            extra.innerHTML += `<button class="btn" style="background:#555; color:#fff;" disabled>Set incompleto</button>`;
-                        }
-                    }
-                    extra.innerHTML += `<button class="btn" style="background: #ad0c0c;" onclick="hipotecar(${pos})">Hipotecar</button>`;
-                }
+            let grupo = obtenerGrupo(pos);
+            let todasPropias = grupo.indices.every(idx => data.propiedades && data.propiedades[idx] && data.propiedades[idx].owner === miIdx);
+
+            if (!todasPropias) {
+                alert("¡No puedes mejorar! Debes poseer todas las propiedades de este grupo de color.");
+                return;
             }
+            
+            db.ref('salas/' + sala + '/propiedades/' + pos + '/nivel').transaction(n => (n || 0) + 1);
+            db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => d - 50);
+            document.getElementById('modal').style.display = 'none';
         });
     }
 
-    // 4. SINCRO PARA COLORES DE PROPIETARIOS
-    function sincronizar(s) {
-        if(s.propiedades) { 
-            Object.keys(s.propiedades).forEach(pos => { 
-                let cell = document.getElementById('cell-' + pos);
-                let p = s.propiedades[pos];
-                if(cell) {
-                    // Si tiene dueño, pinta la celda con el color del jugador, si está hipotecada gris
-                    if(p.owner !== undefined) {
-                        cell.style.backgroundColor = p.hipotecada ? "#555" : colores[p.owner];
-                    }
-                }
-            }); 
-        }
-    }
-    </script>
-</body>
-</html>
+    // Inicialización de celdas con franjas
+    mapa.forEach((m, i) => {
+        const d = document.createElement('div');
+        d.className = 'cell'; d.id = 'cell-' + i;
+        let grupo = obtenerGrupo(i);
+        d.innerHTML = `<div class="strip" style="background: ${grupo ? grupo.color : 'transparent'}"></div>${m.n}<br>${m.p > 0 ? '$'+m.p : ''}<div class="house-container"></div>`;
+        document.getElementById('board').appendChild(d);
+    });
+
+    // ... (Mantener resto de funciones originales de sincronización y juego)
+</script></body></html>
