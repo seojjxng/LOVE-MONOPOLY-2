@@ -286,24 +286,23 @@ function pagarPenalidad() {
 
         modalTitle.innerText = "🏦 Banco Central";
         
-        // Limpiamos los dos contenedores primero para evitar duplicados
+        // LIMPIEZA TOTAL ANTES DE VOLVER A ESCRIBIR
         modalText.innerHTML = "";
         modalExtra.innerHTML = "";
 
         if (j.tienePrestamo) {
             modalText.innerHTML = `<p>Tienes un préstamo activo de: <b>$${j.montoPrestamo}</b></p>`;
-            modalExtra.innerHTML = `<button class="btn" onclick="pagarPrestamo()">Liquidar Deuda</button>
-                                    <button class="btn" style="background:#555" onclick="cerrarModal()">Cerrar</button>`;
+            modalExtra.innerHTML = `<button class="btn" onclick="pagarPrestamo()">Liquidar Deuda</button>`;
         } else {
             modalText.innerHTML = `<p>Tu saldo: <b>$${j.dinero}</b></p><p>Selecciona un monto:</p>`;
-            
             let montos = [300, 500, 700, 900];
             montos.forEach(m => {
-                modalExtra.innerHTML += `<button class="btn" onclick="pedirPrestamo(${m})">$${m}</button> `;
+                modalExtra.innerHTML += `<button class="btn" onclick="pedirPrestamo(${m})">$${m}</button>`;
             });
-            // Único botón de cerrar al final
-            modalExtra.innerHTML += `<br><br><button class="btn" style="background:#555" onclick="cerrarModal()">Cerrar</button>`;
         }
+        
+        // AGREGAR EL BOTÓN DE CERRAR AL FINAL DE TODO
+        modalExtra.innerHTML += `<br><button class="btn" style="background:#555" onclick="cerrarModal()">Cerrar</button>`;
         
         document.getElementById('modal').style.display = 'block';
     });
