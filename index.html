@@ -7,7 +7,13 @@
     <style>
         body { background: #fff0f3; font-family: 'Montserrat', sans-serif; display: flex; justify-content: center; padding: 20px; color: #c71585; }
         .container { display: flex; gap: 25px; width: 1000px; }
-        .game-column { display: flex; flex-direction: column; gap: 15px; height: 100%; }
+        .game-column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 600px; /* Tamaño fijo para el tablero */
+    flex-shrink: 0; /* IMPEDIR QUE SE ENCOJA */
+}
         
         /* Tablero reducido */
         .board { display: grid; grid-template-columns: repeat(8, 70px); grid-template-rows: repeat(8, 70px); gap: 5px; background: #ffccd5; padding: 10px; border-radius: 25px; position: relative; justify-content: center; align-content: center; }
@@ -58,8 +64,18 @@
         .card-property { border: 2px solid #c71585; padding: 10px; border-radius: 5px; background: white; margin-bottom: 10px; }
         .card-header { background: #ff80bf; color: white; padding: 5px; font-weight: bold; margin-bottom: 10px; }
         .empty-debt { padding: 10px; background: #fff; border: 1px solid #ff80bf; border-radius: 10px; color: #ff59aa; font-weight: bold; }
-        #banco-container { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; background: #fff0f9; border: 2px solid #ffccd5; border-radius: 20px; padding: 15px; gap: 10px; margin-top: auto; /* Esto empuja el contenedor hacia el fondo del contenedor padre */
-    width: 100%; }
+        #banco-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    width: 100% !important; /* Ocupa solo el ancho de su columna */
+    box-sizing: border-box !important;
+    background: #fff0f9;
+    padding: 15px;
+    border: 2px solid #ffccd5;
+    border-radius: 20px;
+}
 
 #banco-container .btn {
     width: auto !important; 
@@ -96,7 +112,6 @@
         <div id="modal-extra"></div>
         <button class="btn" id="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
     </div>
-
 
         <div id="modal-misiones" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:300px; background:#ffe4e9; padding:20px; border:3px solid #ff80bf; border-radius:15px; text-align:center; z-index:999;">
         <div class="modal-content">
