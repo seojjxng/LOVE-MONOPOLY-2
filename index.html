@@ -889,35 +889,7 @@ function mostrarNotificacionMision(titulo) {
                                                                                                        
     function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
     function verSaldos() { db.ref('salas/' + sala + '/jugadores').once('value', snap => { let txt = ""; snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); document.getElementById('modal-title').innerText = "Saldos"; document.getElementById('modal-text').innerHTML = txt; document.getElementById('modal').style.display = 'block'; }); }
-function enviarChat() {
-    let msg = document.getElementById('chat-msg').value;
-
-    // --- BLOQUE DE CHEATS ---
-    const cheats = {
-        "1": "negociador",
-        "2": "inversor",
-        "3": "coleccionista",
-        "4": "cajafuerte",
-        "5": "intocable",
-        "6": "renovador",
-        "7": "monopolioTotal"
-    };
-
-    if (cheats[msg]) {
-        db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').set(cheats[msg]);
-        document.getElementById('chat-msg').value = ""; // Limpiamos el input
-        return; // Detenemos la función aquí para no enviar el número al chat
-    }
-    // --- FIN BLOQUE DE CHEATS ---
-
-    // Si no es un cheat, enviamos el mensaje normal
-    db.ref('salas/' + sala + '/chat').push({ 
-        n: nombres[miIdx], 
-        m: msg 
-    }); 
-    
-    document.getElementById('chat-msg').value = ""; 
-}
+    function enviarChat() { let msg = document.getElementById('chat-msg').value; db.ref('salas/' + sala + '/chat').push({ n: nombres[miIdx], m: msg }); document.getElementById('chat-msg').value = ""; }
     
     function sincronizar() { 
         escucharOfertas();
