@@ -553,11 +553,9 @@ mostrarNotificacionMision("¡Inversor Inicial alcanzado!");
     db.ref('salas/' + sala).once('value', snap => {
         let data = snap.val();
         let grupo = obtenerGrupo(pos);
-        
-        // 1. Extraer la propiedad correctamente
         let prop = data.propiedades ? data.propiedades[pos] : null;
 
-        // 2. Validar que el jugador posee todas las propiedades del grupo
+        // Validar que el jugador posee todas las propiedades del grupo
         let todasPropias = grupo.indices.every(idx => 
             data.propiedades && 
             data.propiedades[idx] && 
@@ -566,29 +564,26 @@ mostrarNotificacionMision("¡Inversor Inicial alcanzado!");
 
         if (!todasPropias) {
             document.getElementById('modal-title').innerText = "¡Acción Bloqueada!";
-            document.getElementById('modal-text').innerText = "Necesitas ser dueño de todas las propiedades del mismo grupo de color para poder construir.";
-            document.getElementById('modal-extra').innerHTML = ""; 
+            document.getElementById('modal-text').innerText = "Necesitas ser dueño de todas las propiedades del mismo grupo para construir.";
             document.getElementById('modal').style.display = 'block';
             return;
         }
 
-        // 3. Validar nivel máximo (Hotel es nivel 5)
-        // Ahora 'prop' ya está definida arriba
-        if (prop && prop.nivel >= 5) {
-            log("Ya has alcanzado el nivel máximo (Hotel).");
-            return;
+        // Si pasa la validación, procedemos a mejorar
+        if (prop.nivel < 5) {
+            db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => {
+                if (d >= 50) {
+                    // Actualizamos el nivel en la propiedad
+                    db.ref('salas/' + sala + '/propiedades/' + pos + '/nivel').set(prop.nivel + 1);
+                    log(nombres[miIdx] + " mejoró " + mapa[pos].n + " al nivel " + (prop.nivel + 1));
+                    cerrarModal();
+                    return d - 50;
+                } else {
+                    alert("No tienes suficiente dinero.");
+                    return d;
+                }
+            });
         }
-
-        // 4. Ejecutar mejora
-        log(nombres[miIdx] + " mejoró " + mapa[pos].n);
-        
-        db.ref('salas/' + sala + '/propiedades/' + pos + '/nivel')
-          .transaction(n => (Number(n) || 0) + 1);
-          
-        db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero')
-          .transaction(d => Number(d) - 200);
-          
-        cerrarModal();
     });
 }
     
