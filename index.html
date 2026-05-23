@@ -185,12 +185,13 @@
     const colores = ["#ffb7b2", "#ffd8a8", "#b2f2bb", "#a5d8ff"];
 
         // Configuración de colores por grupo
-    const grupos = [
+   const grupos = [
     {color: "#ff80bf", indices: [1, 3, 4, 5]},
     {color: "#a5d8ff", indices: [7, 10, 11, 13]},
     {color: "#b2f2bb", indices: [14, 15, 16, 17]},
     {color: "#ffd8a8", indices: [19, 20, 21, 24]},
-    {color: "#eebafa", indices: [25, 27, 28]} 
+    {color: "#eebafa", indices: [25, 27, 28]},
+    {color: "#f5f5dc", indices: [8, 23, 26]} 
 ];
 
         function obtenerGrupo(pos) {
@@ -1080,22 +1081,27 @@ function mostrarNotificacionMision(titulo) {
      
     window.addEventListener('DOMContentLoaded', () => {
     // 1. Dibujar el tablero
-    mapa.forEach((m, i) => { 
-        const d = document.createElement('div'); 
-        d.className = 'cell'; 
-        d.id = 'cell-' + i; 
-        d.onclick = () => verPropiedad(i);
-        
-        let g = obtenerGrupo(i);
-        d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+   mapa.forEach((m, i) => { 
+    const d = document.createElement('div'); 
+    d.className = 'cell'; 
+    d.id = 'cell-' + i; 
+    d.onclick = () => verPropiedad(i);
+    
+    let g = obtenerGrupo(i);
+    
+    // Ahora pintamos el strip para todos, incluyendo el nuevo grupo crema
+    let stripHTML = '';
+    if (g) {
+        stripHTML = `<div class="strip" style="background: ${g.color}"></div>`;
+    }
+    
+    d.innerHTML = `${stripHTML}
+                   <div class="contenido">
                        ${m.n}<br>
                        ${m.p > 0 ? '$' + m.p : ''}
-                       <div class="house-container"></div>`;
-        document.getElementById('board').appendChild(d); 
-    });
-        
-         
-    });
+                   </div>`;
+    document.getElementById('board').appendChild(d);
+});
 </script>
 </body>
 </html>
