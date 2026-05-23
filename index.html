@@ -310,10 +310,18 @@ function pagarPenalidad() {
     
     // 3. LOGICA DE VISUALIZACIÓN:
     // Si yo soy el vendedor, debo ver el modal
-    if (vendedorIdx === miIdx) {
-        document.getElementById('mision-nombre').innerText = titulo;
-        document.getElementById('mision-premio').innerText = "$" + premio;
-        document.getElementById('modal-mision-completada').style.display = 'block';
+    if (parseInt(vendedorIdx) === parseInt(miIdx)) {
+        console.log("Mostrando modal de misión para el vendedor:", nombres[vendedorIdx]);
+        
+        const modal = document.getElementById('modal-mision-completada');
+        const nombreDisplay = document.getElementById('mision-nombre');
+        const premioDisplay = document.getElementById('mision-premio');
+        
+        if (modal && nombreDisplay && premioDisplay) {
+            nombreDisplay.innerText = titulo;
+            premioDisplay.innerText = "$" + premio;
+            modal.style.display = 'block'; // Aseguramos que se muestre
+        }
     }
     
     log("¡Misión completada: " + titulo + "! " + nombres[vendedorIdx] + " recibió $" + premio);
