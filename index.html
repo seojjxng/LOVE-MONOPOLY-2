@@ -258,19 +258,45 @@ function pagarPenalidad() {
 }
     
     function unirse() { 
-        if(yaEntro) return;
-        sala = document.getElementById('sala-id').value; 
-        if(!sala) return;
-        yaEntro = true;
-        document.getElementById('btn-unirse').disabled = true;
-        db.ref('salas/' + sala + '/jugadores').once('value', snap => { 
-            miIdx = snap.numChildren(); 
-            db.ref('salas/' + sala + '/jugadores/' + miIdx).set({ pos: 0, dinero: 1000, enCarcel: 0, tienePrestamo: false, montoPrestamo: 0 }); 
-            if(miIdx == 0) { db.ref('salas/' + sala + '/turno').set(0); iniciarRelojClima(); }
-            db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: nombres[miIdx] + " ha entrado a la sala." });
-            sincronizar(); 
+    if(yaEntro) return;
+    sala = document.getElementById('sala-id').value; 
+    if(!sala) return;
+    yaEntro = true;
+    document.getElementById('btn-unirse').disabled = true;
+
+    db.ref('salas/' + sala + '/jugadores').once('value', snap => { 
+        miIdx = snap.numChildren(); 
+        
+        // 1. DEFINIMOS LA REFERENCIA PRIMERO
+        let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
+        
+        // 2. HACEMOS EL SET
+        jugadorRef.set({ 
+            pos: 0, 
+            dinero: 1000, 
+            enCarcel: 0, 
+            tienePrestamo: false, 
+            montoPrestamo: 0 
         }); 
-    }
+        
+        // 3. AHORA SÍ, USAMOS LA VARIABLE PARA LA DESCONEXIÓN
+        jugadorRef.onDisconnect().remove();
+        
+        db.ref('salas/' + sala + '/chat').onDisconnect().push({ 
+            n: "Sistema", 
+            m: nombres[miIdx] + " ha abandonado la partida." 
+        });
+        
+        if(miIdx == 0) { db.ref('salas/' + sala + '/turno').set(0); iniciarRelojClima(); }
+        
+        db.ref('salas/' + sala + '/chat').push({ 
+            n: "Sistema", 
+            m: nombres[miIdx] + " ha entrado a la sala." 
+        });
+        
+        sincronizar(); 
+    }); 
+}
 
         function abrirModalMisiones() {
     db.ref('salas/' + sala + '/jugadores/' + miIdx + '/misionesCumplidas').once('value', snap => {
