@@ -616,7 +616,6 @@ function mostrarNotificacionMision(titulo) {
             <p>Selecciona una modalidad para esta sala:</p>
             <div id="modal-extra">
                 <button class="btn" onclick="activarModo2vs2()">Activar Modo 2vs2</button>
-                <button class="btn" onclick="document.getElementById('modal').style.display = 'none'">Cerrar</button>
             </div>
         </div>
     `;
@@ -631,7 +630,7 @@ function activarModo2vs2() {
     document.getElementById('modal').style.display = 'none';
 }
 
-        function renderizarInterfaz() {
+function renderizarInterfaz() {
     const contenedor = document.getElementById('contenedor-configuracion');
     if (contenedor && miIdx === 0) {
         contenedor.innerHTML = `
@@ -644,7 +643,6 @@ function activarModo2vs2() {
         `;
     }
 }
-
    function abrirIntercambio() {
     // 1. LIMPIEZA: Borramos cualquier botón o aviso anterior en el modal
     document.getElementById('modal-extra').innerHTML = ""; 
