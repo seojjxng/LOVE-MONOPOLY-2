@@ -402,6 +402,8 @@ function mostrarNotificacionMision(titulo) {
     });
 }
 
+        
+
         function verificarMisionRenovador(jugadorIdx) {
     db.ref('salas/' + sala + '/propiedades').once('value', snap => {
         let propiedades = snap.val();
@@ -454,6 +456,67 @@ function mostrarNotificacionMision(titulo) {
             document.getElementById('modal').style.display = 'block';
         }
     }
+
+        function abrirBanco() {
+    db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
+        let j = snap.val();
+        let modalTitle = document.getElementById('modal-title');
+        let modalText = document.getElementById('modal-text');
+        let modalExtra = document.getElementById('modal-extra');
+
+        modalTitle.innerText = "🏦 Banco Central";
+        
+        if (j.tienePrestamo) {
+            modalText.innerHTML = `<p>Tienes un préstamo activo de: <b>$${j.montoPrestamo}</b></p>`;
+            modalExtra.innerHTML = `<button class="btn" onclick="pagarPrestamo()">Liquidar Deuda</button>
+                                    <button class="btn" onclick="cerrarModal()">Cerrar</button>`;
+        } else {
+            let html = `<p>Tu saldo: <b>$${j.dinero}</b></p><p>Selecciona un monto para tu préstamo:</p>`;
+            modalText.innerHTML = html;
+            
+            // Botones de montos
+            let montos = [300, 500, 700, 900];
+            modalExtra.innerHTML = "";
+            montos.forEach(m => {
+                modalExtra.innerHTML += `<button class="btn" onclick="pedirPrestamo(${m})">$${m}</button> `;
+            });
+            modalExtra.innerHTML += `<br><br><button class="btn" style="background:#555" onclick="cerrarModal()">Cerrar</button>`;
+        }
+        document.getElementById('modal').style.display = 'block';
+    });
+}
+
+        function pedirPrestamo(monto) {
+    db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
+        let j = snap.val();
+        
+        // Validación: Si ya tiene préstamo, muestra el aviso
+        if (j.tienePrestamo) {
+            document.getElementById('modal-title').innerText = "⚠️ Error";
+            document.getElementById('modal-text').innerHTML = 
+                `<p>No puedes solicitar un nuevo préstamo mientras tengas una deuda activa de <b>$${j.montoPrestamo}</b>.</p>
+                 <p>Debes liquidar tu deuda actual primero.</p>`;
+            document.getElementById('modal-extra').innerHTML = 
+                `<button class="btn" onclick="abrirBanco()">Volver al Banco</button>`;
+            return; // Detiene la ejecución
+        }
+
+        // Si no tiene, procede con la transacción
+        db.ref('salas/' + sala + '/jugadores/' + miIdx).transaction(player => {
+            if (player && !player.tienePrestamo) {
+                player.tienePrestamo = true;
+                player.montoPrestamo = monto;
+                player.dinero = Number(player.dinero) + monto;
+                return player;
+            }
+        }, (error, committed) => {
+            if (committed) {
+                log(nombres[miIdx] + " obtuvo un préstamo de $" + monto + ".");
+                cerrarModal();
+            }
+        });
+    });
+}
 
     function abrirIntercambio() {
         db.ref('salas/' + sala).once('value', snap => {
