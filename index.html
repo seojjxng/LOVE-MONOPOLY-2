@@ -241,7 +241,7 @@
 
         misiones.forEach(m => {
             let item = document.createElement('li');
-            item.innerHTML = `${m.titulo} - <b>$${m.rec}</b> ${completadas[m.id] ? '✅' : '⏳'}`;
+            item.innerHTML = `${m.titulo} - <b>$${m.rec}</b> ${completadas[m.id] ? '✅'}`;
             lista.appendChild(item);
         });
 
