@@ -38,16 +38,6 @@
     text-align: center; 
     z-index: 1000; 
 }
-
-       #modal-mision-completada {
-    display: none; 
-    position: fixed; 
-    top: 50%; 
-    left: 50%; 
-    transform: translate(-50%, -50%); 
-    z-index: 99999 !important; /* <--- IMPORTANTE */
-}
-        
 #lista-misiones { 
     list-style: none; 
     padding: 0; 
@@ -70,7 +60,7 @@
         .input-field { width: 93%; padding: 8px; margin: 5px 0; border: 1px solid #ffccd5; border-radius: 8px; }
         #log { height: 125px; overflow-y: auto; font-size: 11px; color: #c71585; padding: 10px; background: white; border-radius: 10px; border: 1px solid #ffccd5; margin-bottom: 10px; }
         #chat-log { height: 125px; overflow-y: auto; font-size: 11px; color: #c71585; padding: 10px; background: white; border-radius: 10px; border: 1px solid #ffccd5; margin-bottom: 10px; }
-        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999; }
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; text-align: center; z-index: 999; }
         .card-property { border: 2px solid #c71585; padding: 10px; border-radius: 5px; background: white; margin-bottom: 10px; }
         .card-header { background: #ff80bf; color: white; padding: 5px; font-weight: bold; margin-bottom: 10px; }
         .empty-debt { padding: 10px; background: #fff; border: 1px solid #ff80bf; border-radius: 10px; color: #ff59aa; font-weight: bold; }
@@ -118,21 +108,6 @@
             </div>
         </div>
 
-        </div> <div id="modal-mision-completada" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 99999; background: #fff; padding: 20px; border: 5px solid #ff80bf; border-radius: 20px;">
-    <h2>¡Misión Completada!</h2>
-    <p id="mision-nombre"></p>
-    <button class="btn" onclick="this.parentElement.style.display='none'">Genial</button>
-</div>
-
-</body>
-</html>
-
-</body>
-</html>
-
-</body>
-</html>
-
         <div id="banco-container">
             <button class="btn" style="width: 140px" onclick="abrirBanco()">🏦 Banco</button>
             <button class="btn" style="width: 140px" onclick="pagarPrestamo()">💳 Pagar Préstamo</button>
@@ -160,12 +135,13 @@
     <h3>Misiones Disponibles</h3>
     <ul id="lista-misiones" style="list-style: none; padding: 0; text-align: left; max-height: 300px; overflow-y: auto; font-size: 12px;"></ul>
     <button class="btn" onclick="document.getElementById('modal-misiones').style.display = 'none'">Cerrar</button>
-</div></div><div id="modal">
+</div>
+        
+    </div></div><div id="modal">
     <h3 id="modal-title"></h3>
     <div id="modal-text"></div>
     <div id="modal-extra"></div>
     <button class="btn" id="btn-cerrar" onclick="cerrarModal()">Cerrar</button></div><script>
-
     const firebaseConfig = { databaseURL: "https://monopolovely-default-rtdb.firebaseio.com" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -300,111 +276,6 @@ function pagarPenalidad() {
         document.getElementById('modal-misiones').style.display = 'block';
     });
 }
-
-        function completarMision(misionId, titulo, premio) {
-    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/misionesCumplidas/' + misionId).once('value', snap => {
-        if (!snap.exists()) {
-            // Marcar como cumplida en Firebase
-            db.ref('salas/' + sala + '/jugadores/' + miIdx + '/misionesCumplidas/' + misionId).set(true);
-            
-            // Sumar el premio
-            db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => d + premio);
-            
-            // Mostrar modal
-            document.getElementById('mision-nombre').innerText = titulo;
-            document.getElementById('mision-premio').innerText = "$" + premio;
-            document.getElementById('modal-mision-completada').style.display = 'block';
-            log("¡Misión completada: " + titulo + "! Recibiste $" + premio);
-        }
-    });
-}
-
-        function premiarVendedor(vendedorIdx, misionId, titulo, premio) {
-    // 1. Marcar en Firebase
-    db.ref('salas/' + sala + '/jugadores/' + vendedorIdx + '/misionesCumplidas/' + misionId).set(true);
-    
-    // 2. Sumar dinero
-    db.ref('salas/' + sala + '/jugadores/' + vendedorIdx + '/dinero').transaction(d => d + premio);
-    
-    // 3. LOGICA DE VISUALIZACIÓN:
-    // Si yo soy el vendedor, debo ver el modal
-    if (parseInt(vendedorIdx) === parseInt(miIdx)) {
-        console.log("Mostrando modal de misión para el vendedor:", nombres[vendedorIdx]);
-        
-        const modal = document.getElementById('modal-mision-completada');
-        const nombreDisplay = document.getElementById('mision-nombre');
-        const premioDisplay = document.getElementById('mision-premio');
-        
-        if (modal && nombreDisplay && premioDisplay) {
-            nombreDisplay.innerText = titulo;
-            premioDisplay.innerText = "$" + premio;
-            modal.style.display = 'block'; // Aseguramos que se muestre
-        }
-    }
-    
-    log("¡Misión completada: " + titulo + "! " + nombres[vendedorIdx] + " recibió $" + premio);
-}
-
-        function abrirBanco() {
-    db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
-        let j = snap.val();
-        let modalTitle = document.getElementById('modal-title');
-        let modalText = document.getElementById('modal-text');
-        let modalExtra = document.getElementById('modal-extra');
-
-        modalTitle.innerText = "🏦 Banco Central";
-        
-        // LIMPIEZA TOTAL ANTES DE VOLVER A ESCRIBIR
-        modalText.innerHTML = "";
-        modalExtra.innerHTML = "";
-
-        if (j.tienePrestamo) {
-            modalText.innerHTML = `<p>Tienes un préstamo activo de: <b>$${j.montoPrestamo}</b></p>`;
-            modalExtra.innerHTML = `<button class="btn" onclick="pagarPrestamo()">Liquidar Deuda</button>`;
-        } else {
-            modalText.innerHTML = `<p>Tu saldo: <b>$${j.dinero}</b></p><p>Selecciona un monto:</p>`;
-            let montos = [300, 500, 700, 900];
-            montos.forEach(m => {
-                modalExtra.innerHTML += `<button class="btn" onclick="pedirPrestamo(${m})">$${m}</button>`;
-            });
-        }
-        
-        document.getElementById('modal').style.display = 'block';
-    });
-}
-
-        function pedirPrestamo(monto) {
-    db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
-        let j = snap.val();
-        
-        // Validación: Si ya tiene préstamo, muestra el aviso
-        if (j.tienePrestamo) {
-            document.getElementById('modal-title').innerText = "⚠️ Error";
-            document.getElementById('modal-text').innerHTML = 
-                `<p>No puedes solicitar un nuevo préstamo mientras tengas una deuda activa de <b>$${j.montoPrestamo}</b>.</p>
-                 <p>Debes liquidar tu deuda actual primero.</p>`;
-            document.getElementById('modal-extra').innerHTML = 
-                `<button class="btn" onclick="abrirBanco()">Volver al Banco</button>`;
-            return; // Detiene la ejecución
-        }
-
-        // Si no tiene, procede con la transacción
-        db.ref('salas/' + sala + '/jugadores/' + miIdx).transaction(player => {
-            if (player && !player.tienePrestamo) {
-                player.tienePrestamo = true;
-                player.montoPrestamo = monto;
-                player.dinero = Number(player.dinero) + monto;
-                return player;
-            }
-        }, (error, committed) => {
-            if (committed) {
-                log(nombres[miIdx] + " obtuvo un préstamo de $" + monto + ".");
-                cerrarModal();
-            }
-        });
-    });
-}
-        
     
     function verificarBancarrota(jugadorIdx, saldo) {
         if (saldo < 0) {
@@ -462,33 +333,22 @@ function pagarPenalidad() {
     }
 
     function confirmarCompra(oKey) {
-    db.ref('salas/' + sala + '/ofertas/' + oKey).once('value', snap => {
-        let o = snap.val();
-        
-        // Ejecutamos la transacción primero
-        db.ref('salas/' + sala + '/jugadores').transaction(j => {
-            if(j[miIdx].dinero >= o.precio) {
-                j[miIdx].dinero -= o.precio;
-                j[o.de].dinero += o.precio;
-                return j;
-            }
-            return; // Si no hay dinero, no devuelve nada (falla la transacción)
-        }, (error, committed) => {
-            if (committed) {
-                // SOLO SI LA TRANSACCIÓN FUE EXITOSA, actualizamos propiedad y misión
-                db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
-                
-                premiarVendedor(o.de, 'negociador', 'El negociador', 400);
-                
-                log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
-                db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
-                document.getElementById('modal').style.display = 'none';
-            } else {
-                alert("No tienes suficiente dinero para completar la compra.");
-            }
+        db.ref('salas/' + sala + '/ofertas/' + oKey).once('value', snap => {
+            let o = snap.val();
+            db.ref('salas/' + sala + '/jugadores').transaction(j => {
+                if(j[miIdx].dinero >= o.precio) {
+                    j[miIdx].dinero -= o.precio;
+                    j[o.de].dinero += o.precio;
+                    return j;
+                }
+                return;
+            });
+            db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
+            log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
+            db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
+            document.getElementById('modal').style.display = 'none';
         });
-    });
-}
+    }
 
    function verPropiedad(pos, esCaida = false) {
         let p = mapa[pos];
@@ -704,56 +564,62 @@ function pagarPenalidad() {
 }
     
     function tirarDado() { 
-        if(miIdx === -1) return;
+    if(miIdx === -1) return;
+    
+    db.ref('salas/' + sala).once('value', snap => {
+        let s = snap.val(); 
+        if(s.turno !== miIdx || s.jugadores[miIdx].enCarcel > 0) return;
         
-        db.ref('salas/' + sala).once('value', snap => {
-            let s = snap.val(); 
-            if(s.turno !== miIdx || s.jugadores[miIdx].enCarcel > 0) return;
-            
-            // 1. Lógica de clima
-            if (s.clima === undefined) {
-                let climaInicial = Math.floor(Math.random() * climas.length);
-                db.ref('salas/' + sala + '/clima').set(climaInicial);
-                let mult = climas[climaInicial].mult;
-                let mensaje = "¡El clima inicial es " + climas[climaInicial].n + "! " + (mult < 1.0 ? "Descuento del " + Math.round((1 - mult) * 100) + "%." : "Precio normal.");
-                log(mensaje);
-            }
+        // 1. Lógica de clima
+        if (s.clima === undefined) {
+            let climaInicial = Math.floor(Math.random() * climas.length);
+            db.ref('salas/' + sala + '/clima').set(climaInicial);
+            let mult = climas[climaInicial].mult;
+            let mensaje = "¡El clima inicial es " + climas[climaInicial].n + "! " + (mult < 1.0 ? "Descuento del " + Math.round((1 - mult) * 100) + "%." : "Precio normal.");
+            log(mensaje);
+        }
 
-            // 2. Cálculo del dado y contador
-            let dado = Math.floor(Math.random() * 6) + 1;
-            document.getElementById('dado-valor').innerText = dado;
-            
-            let contadorActual = s.jugadores[miIdx].seisSeguidos || 0;
-            let nuevoContador = (dado === 6) ? contadorActual + 1 : 0;
+        // 2. Cálculo del dado y contador
+        let dado = Math.floor(Math.random() * 6) + 1;
+        document.getElementById('dado-valor').innerText = dado;
+        let contadorActual = s.jugadores[miIdx].seisSeguidos || 0;
+        let nuevoContador = (dado === 6) ? contadorActual + 1 : 0;
 
-            // 3. Movimiento
-            let posActual = Number(s.jugadores[miIdx].pos);
-            let nuevaPos = (posActual + dado) % mapa.length;
-            
-            if (nuevaPos < posActual) { 
-                db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + 200); 
-                log(nombres[miIdx] + " pasó por SALIDA y cobró $200."); 
-            }
+        // 3. Movimiento
+        let posActual = Number(s.jugadores[miIdx].pos);
+        let nuevaPos = (posActual + dado) % mapa.length;
+        
+        if (nuevaPos < posActual) { 
+            db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + 200); 
+            log(nombres[miIdx] + " pasó por SALIDA y cobró $200."); 
+        }
 
-            // 4. Lógica de Penalización o Movimiento
-            if (nuevoContador === 3) {
-                log("¡ACUSACIÓN DE FRAUDE! " + nombres[miIdx] + " sacó tres 6 seguidos.");
-                db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: 8, enCarcel: 2, seisSeguidos: 0 });
-                gestionarFraude();
-                pasarTurno();
-                setTimeout(() => manejarCasilla(8), 600);
+        // 4. Lógica de Penalización o Movimiento
+        if (nuevoContador === 3) {
+            log("¡ACUSACIÓN DE FRAUDE! " + nombres[miIdx] + " sacó tres 6 seguidos.");
+            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
+                pos: 8, 
+                enCarcel: 2, 
+                seisSeguidos: 0 
+            });
+            gestionarFraude();
+            pasarTurno();
+            setTimeout(() => manejarCasilla(8), 600);
+        } else {
+            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
+                pos: nuevaPos, 
+                seisSeguidos: nuevoContador 
+            });
+
+            if (dado === 6) {
+                log("¡Sacaste un 6! Tienes turno extra.");
             } else {
-                db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: nuevaPos, seisSeguidos: nuevoContador });
-
-                if (dado === 6) {
-                    log("¡Sacaste un 6! Tienes turno extra.");
-                } else {
-                    pasarTurno();
-                }
-                setTimeout(() => manejarCasilla(nuevaPos), 600);
+                pasarTurno();
             }
-        }); 
-    }                                            
+            setTimeout(() => manejarCasilla(nuevaPos), 600);
+        }
+    }); 
+}                                                             
                                                                                                        
     function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
     function verSaldos() { db.ref('salas/' + sala + '/jugadores').once('value', snap => { let txt = ""; snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); document.getElementById('modal-title').innerText = "Saldos"; document.getElementById('modal-text').innerHTML = txt; document.getElementById('modal').style.display = 'block'; }); }
