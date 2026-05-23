@@ -187,20 +187,20 @@
         {n:"SALIDA",p:0},{n:"ITAEWON",p:100},{n:"ARCA COMUNAL",p:0},{n:"BUSAN",p:200},{n:"SEOCHO",p:250},{n:"GANGNAM",p:300},{n:"?",p:0},{n:"CYBER CAFÉ",p:400},
         {n:"CÁRCEL",p:0},{n:"CAFETERÍA",p:500},{n:"RESTAURANTE",p:520},{n:"?",p:0},{n:"SPA",p:300},{n:"CINE",p:350},{n:"HOSPITAL",p:400},{n:"TEATRO",p:500},
         {n:"ESTADIO",p:550},{n:"ARCA COMUNAL",p:0},{n:"SMENT",p:600},{n:"YG ENT",p:700},{n:"YJP",p:750},{n:"IMPUESTOS",p:0},{n:"HYBE CORP.",p:800},{n:"MOTO",p:900},
-        {n:"METRO",p:950},{n:"PARADA",p:0},{n:"AEREOPUERTO",p:1000},{n:"TREN",p:1200},{n:"METRO",p:1300}
+        {n:"METRO",p:950},{n:"PARADA",p:0},{n:"AVIÓN",p:1000},{n:"TREN",p:1200},{n:"METRO",p:1300}
     ];
 
     // Variables de clima ampliadas
    const climas = [
-        {n: "Primavera Soleada", mult: 1.0}, {n: "Primavera Lluviosa", mult: 1.0},
-        {n: "Verano Caluroso", mult: 1.0}, {n: "Verano Nublado", mult: 1.0},
-        {n: "Otoño Fresco", mult: 1.0}, {n: "Otoño Ventoso", mult: 1.0},
+        {n: "Primavera Soleada, ¡los valores del mercado se mantienen igual!", mult: 1.0}, {n: "Primavera Lluviosa, ¡los valores del mercado se mantienen igual!", mult: 1.0},
+        {n: "Verano Caluroso, ¡los valores del mercado se mantienen igual!", mult: 1.0}, {n: "Verano Nublado, ¡los valores del mercado se mantienen igual!", mult: 1.0},
+        {n: "Otoño Fresco, ¡los valores del mercado se mantienen igual!", mult: 1.0}, {n: "Otoño Ventoso, ¡los valores del mercado se mantienen igual!", mult: 1.0},
         // Climas adversos que reducen alquiler (porcentaje azar entre 50% y 80%)
-        {n: "Lluvia Fuerte", mult: 0.7}, 
-        {n: "Tormenta Eléctrica", mult: 0.5},
-        {n: "Ventisca", mult: 0.6}, 
-        {n: "Nevada Intensa", mult: 0.6},
-        {n: "Tornado", mult: 0.5}
+        {n: "Lluvia Fuerte. ¡Oh, no! Los precios del alquiler se desploman.", mult: 0.7}, 
+        {n: "Tormenta Eléctrica. ¡El porcentaje del alquiler disminuirá!", mult: 0.5},
+        {n: "Ventisca. ¡El porcentaje del alquiler disminuirá!", mult: 0.6}, 
+        {n: "Nevada Intensa. ¡No salgas de casa y revisa tus finanzas! ¡El porcentaje del alquiler disminuirá!", mult: 0.6},
+        {n: "Tornado. ¡No salgas de casa y revisa tus finanzas! ¡El porcentaje del alquiler disminuirá!", mult: 0.5}
     ];
 
     function iniciarRelojClima() {
@@ -240,9 +240,9 @@
     let htmlContent = `
         <div class="card-property">
             <p>Has sido acusado de <b>FRAUDE</b> por acumular tres 6 seguidos.</p>
-            <p>Debes pagar una penalidad o esperar un turno en la cárcel.</p>
-            <button class="btn" onclick="pagarPenalidad()">Pagar $150</button>
-            <button class="btn" style="background:#555" onclick="cerrarModal()">Esperar turno</button>
+            <p>¡Tienes derecho a un abogado! ¿Quieres pagar la penalidad?</p>
+            <button class="btn" onclick="pagarPenalidad()">Pagar $250</button>
+            <button class="btn" style="background:#555" onclick="cerrarModal()">Un turno sin jugar</button>
         </div>
     `;
     document.getElementById('modal-text').innerHTML = htmlContent;
@@ -252,7 +252,7 @@
 
 function pagarPenalidad() {
     db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ enCarcel: 0 });
-    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => d - 150);
+    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => d - 250);
     log(nombres[miIdx] + " pagó la multa de fraude y fue liberado.");
     cerrarModal();
 }
