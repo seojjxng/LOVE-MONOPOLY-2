@@ -21975,7 +21975,7 @@ Aquí tienes el bloque de código correcto para la función DOMContentLoaded. Re
 
 JavaScript
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. Dibujar el tablero
+    const board = document.getElementById('board');
     mapa.forEach((m, i) => { 
         const d = document.createElement('div'); 
         d.className = 'cell'; 
@@ -21984,26 +21984,16 @@ window.addEventListener('DOMContentLoaded', () => {
         
         let g = obtenerGrupo(i);
         
-        // Creamos una variable para el HTML interno
-        let contenidoHTML = "";
-        
-        // Si es el grupo especial (Ferrocarriles/Crema), pintamos el borde
+        // Si es grupo crema (ferrocarril), borde especial
         if (g && g.color === "#f5f5dc") {
             d.style.border = "3px solid #f5f5dc"; 
             d.style.backgroundColor = "#fffef0";
         } else if (g) {
-            // Para otros grupos, agregamos el strip
-            contenidoHTML += `<div class="strip" style="background: ${g.color}"></div>`;
+            d.innerHTML = `<div class="strip" style="background: ${g.color}"></div>`;
         }
         
-        // Agregamos el texto de la propiedad
-        contenidoHTML += `<div class="contenido" style="padding-top: 5px;">
-                            ${m.n}<br>
-                            ${m.p > 0 ? '$' + m.p : ''}
-                          </div>`;
-        
-        d.innerHTML = contenidoHTML;
-        document.getElementById('board').appendChild(d);
+        d.innerHTML += `<div class="contenido">${m.n}<br>${m.p > 0 ? '$' + m.p : ''}</div>`;
+        board.appendChild(d);
     });
 });
 </script>
