@@ -975,41 +975,32 @@ function verPropiedad(pos, esCaida = false) {
 }
 
         function pasarTurno() {
+    // 1. Resetear contador de seis
     if (typeof turnosSeis !== 'undefined') turnosSeis = 0;
 
+    // 2. Obtener la lista real de jugadores desde la base de datos
     db.ref('salas/' + sala + '/jugadores').once('value', snap => {
         const jugadoresData = snap.val();
         if (!jugadoresData) return;
 
-        // 1. Obtenemos solo los que tienen online: true
-        let idsJugadores = Object.keys(jugadoresData);
-        let turnoActual;
-        
+        // Filtramos solo los jugadores que están ONLINE
+        // Esto ignora a los jugadores que se desconectaron (online: false)
+        const indicesActivos = Object.keys(jugadoresData).filter(idx => jugadoresData[idx].online === true);
+
+        if (indicesActivos.length === 0) return; // Nadie conectado
+
+        // 3. Obtener turno actual y calcular el siguiente
         db.ref('salas/' + sala + '/turno').once('value', tSnap => {
-            turnoActual = Number(tSnap.val());
+            let turnoActual = String(tSnap.val());
+            let idxActual = indicesActivos.indexOf(turnoActual);
             
-            // 2. Buscamos el siguiente índice en un círculo
-            let idxActual = idsJugadores.indexOf(String(turnoActual));
-            let encontrado = false;
-            let intentos = 0;
+            // Si el jugador actual no está en la lista activa, empezamos por el primero
+            let siguienteIdx = (idxActual + 1) % indicesActivos.length;
+            let nuevoTurno = indicesActivos[siguienteIdx];
 
-            // Intentamos buscar el siguiente jugador hasta 5 veces (para evitar bucles infinitos)
-            while (!encontrado && intentos < idsJugadores.length) {
-                idxActual = (idxActual + 1) % idsJugadores.length;
-                let siguienteIdx = idsJugadores[idxActual];
-
-                // 3. LA VERIFICACIÓN CRÍTICA:
-                // Solo aceptamos el turno si el jugador existe Y está online
-                if (jugadoresData[siguienteIdx] && jugadoresData[siguienteIdx].online === true) {
-                    db.ref('salas/' + sala + '/turno').set(Number(siguienteIdx));
-                    encontrado = true;
-                }
-                intentos++;
-            }
-
-            if (!encontrado) {
-                console.log("No se encontró ningún jugador online para pasar el turno.");
-            }
+            // 4. Asignar turno al jugador activo encontrado
+            db.ref('salas/' + sala + '/turno').set(Number(nuevoTurno));
+            log("Es el turno de " + jugadoresData[nuevoTurno].nombre);
         });
     });
 }
