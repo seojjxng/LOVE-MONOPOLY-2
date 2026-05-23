@@ -29,7 +29,8 @@
 }
         .cell { background: white; border: 2px solid #ffccd5; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; color: #c71585; text-align: center; position: relative; cursor: pointer; }
         
-        .strip { width: 100%; height: 10px; position: absolute; top: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; }
+        .strip { width: 100%; height: 10px; position: absolute; top: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; .strip[style*="background: transparent"] {
+        display: none; }
         .house-container { position: absolute; bottom: 2px; display: flex; gap: 1px; }
         .house { width: 8px; height: 8px; background: #ff59aa; }
         .hotel { width: 20px; height: 8px; background: #c71585; }
@@ -186,16 +187,16 @@
 
         // Configuración de colores por grupo
     const grupos = [
-    {color: "#ff80bf", indices: [1, 3, 4, 5]},
-    {color: "#a5d8ff", indices: [7, 10, 11, 13]},
-    {color: "#b2f2bb", indices: [14, 15, 16, 17]},
-    {color: "#ffd8a8", indices: [19, 20, 21, 24]},
-    {color: "#eebafa", indices: [25, 27, 28]} 
+    // Tus grupos de propiedades con colores personalizados:
+    { id: 'grupo1', color: "#ff80bf", indices: [1, 3, 4, 5] },
+    { id: 'grupo2', color: "#a5d8ff", indices: [7, 10, 11, 13] },
+    { id: 'grupo3', color: "#b2f2bb", indices: [14, 15, 16, 17] },
+    { id: 'grupo4', color: "#ffd8a8", indices: [19, 20, 21, 24] },
+    { id: 'grupo5', color: "#eebafa", indices: [25, 27, 28] },
+    
+    // El grupo especial de transportes (sin franja de color):
+    { id: 'ferrocarriles', color: 'transparent', indices: [8, 22, 26, 27] } 
 ];
-
-        function obtenerGrupo(pos) {
-    return grupos.find(g => g.indices.includes(pos));
-}
         
     const mapa = [
     {n:"SALIDA",p:0},{n:"ITAEWON",p:100},{n:"ARCA",p:0},{n:"BUSAN",p:200},
