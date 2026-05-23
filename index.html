@@ -391,19 +391,26 @@
 
         // 2. Si no posee todas, mostrar error y detener la ejecución
         if (!todasPropias) {
-            alert("¡Necesitas poseer todas las propiedades de este color para mejorar!");
+            alert("¡Necesitas ser dueño de todas las propiedades del mismo grupo de color para poder mejorar!");
             return;
         }
 
+        // 2. Validar nivel máximo (Hotel es nivel 5)
+        if (prop.nivel >= 5) {
+            log("Ya has alcanzado el nivel máximo (Hotel).");
+            return;
+        }
+
+        // 3. Ejecutar mejora (Descuento de 200)
         log(nombres[miIdx] + " mejoró " + mapa[pos].n);
         
         db.ref('salas/' + sala + '/propiedades/' + pos + '/nivel')
           .transaction(n => (Number(n) || 0) + 1);
           
         db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero')
-          .transaction(d => Number(d) - 50);
+          .transaction(d => Number(d) - 200);
           
-        document.getElementById('modal').style.display = 'none';
+        cerrarModal();
     });
 }
     
@@ -474,6 +481,9 @@
     d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>${m.n}<br>${m.p > 0 ? '$'+m.p : ''}<div class="house-container"></div>`; 
     
     document.getElementById('board').appendChild(d); 
-});</script></body></html>
+});
+</script>
+</body>
+</html>
 
 
