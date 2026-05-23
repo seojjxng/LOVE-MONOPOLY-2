@@ -533,49 +533,66 @@ function mostrarNotificacionMision(titulo) {
     });
 }
 
-        function pagarPrestamo() {
+        function pedirPrestamo(monto) {
     db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
         let j = snap.val();
-        if (!j) return;
+        
+        // Validación: Si ya tiene préstamo, muestra el aviso
         if (j.tienePrestamo) {
-            if (j.dinero >= j.montoPrestamo) {
-                db.ref('salas/' + sala + '/jugadores/' + miIdx).update({
-                    dinero: firebase.database.ServerValue.increment(-j.montoPrestamo),
-                    tienePrestamo: false,
-                    montoPrestamo: 0
-                });
-                alert("Prestamo pagado.");
-            } else {
-                alert("Fondos insuficientes");
-            }
-        } else {
-            alert("No tienes préstamos pendientes.");
+            document.getElementById('modal-title').innerText = "⚠️ Error";
+            document.getElementById('modal-text').innerHTML = 
+                `<p>No puedes solicitar un nuevo préstamo mientras tengas una deuda activa de <b>$${j.montoPrestamo}</b>.</p>
+                 <p>Debes liquidar tu deuda actual primero.</p>`;
+            document.getElementById('modal-extra').innerHTML = 
+                `<button class="btn" onclick="abrirBanco()">Volver al Banco</button>`;
+            return; // Detiene la ejecución
         }
+
+        // Si no tiene, procede con la transacción
+        db.ref('salas/' + sala + '/jugadores/' + miIdx).transaction(player => {
+            if (player && !player.tienePrestamo) {
+                player.tienePrestamo = true;
+                player.montoPrestamo = monto;
+                player.dinero = Number(player.dinero) + monto;
+                return player;
+            }
+        }, (error, committed) => {
+            if (committed) {
+                log(nombres[miIdx] + " obtuvo un préstamo de $" + monto + ".");
+                cerrarModal();
+            }
+        });
     });
 }
 
    function abrirIntercambio() {
+    // 1. LIMPIEZA: Borramos cualquier botón o aviso anterior en el modal
     document.getElementById('modal-extra').innerHTML = ""; 
+    
     db.ref('salas/' + sala).once('value', snap => {
         let data = snap.val();
         let misProps = [];
-        if(data && data.propiedades) {
+        
+        if(data.propiedades) {
             Object.keys(data.propiedades).forEach(pIdx => {
                 if(data.propiedades[pIdx].owner === miIdx) misProps.push(pIdx);
             });
         }
         document.getElementById('modal-title').innerText = "Revender Propiedad";
-        let html = "Selecciona propiedad, precio (250-999) y comprador:<br>";
+        let html = "Selecciona propiedad, precio (100-999) y comprador:<br>";
         if(misProps.length === 0) { html += "No tienes propiedades."; }
         else {
             misProps.forEach(pIdx => {
                 let p = mapa[pIdx];
+                // Agregamos el input para el precio personalizado
                 html += `<br><b>${p.n}</b>: 
-                         <input type="number" id="precio-${pIdx}" placeholder="250" min="250" max="999" style="width: 60px;"> 
+                         <input type="number" id="precio-${pIdx}" placeholder="250" min="100" max="999" style="width: 60px;"> 
                          <select id="sel-${pIdx}">`;
+                
                 data.jugadores.forEach((j, i) => { 
                     if(i !== miIdx) html += `<option value="${i}">${nombres[i]}</option>`; 
                 });
+                
                 html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button>`;
             });
         }
@@ -589,17 +606,9 @@ function mostrarNotificacionMision(titulo) {
     let precioInput = document.getElementById('precio-' + pIdx).value;
     let precio = parseInt(precioInput);
 
-    // Validación: que el precio esté entre 250 y 999
-    if (!precio || precio < 250 || precio > 999) {
-        // En lugar de alert(), mostramos el error en el modal con CSS
-        document.getElementById('modal-title').innerText = "Error de Venta";
-        document.getElementById('modal-text').innerHTML = `
-            <p style="color: #ad0c0c; font-weight: bold;">
-                Por favor, ingresa un precio válido entre $250 y $999.
-            </p>
-            <button class="btn" onclick="abrirIntercambio()">Volver atrás</button>
-        `;
-        document.getElementById('modal-extra').innerHTML = ""; // Limpiar botones
+    // Validación: que el precio esté entre 100 y 999
+    if (!precio || precio < 100 || precio > 999) {
+        alert("Por favor, ingresa un precio válido entre 100 y 999.");
         return;
     }
 
@@ -613,6 +622,19 @@ function mostrarNotificacionMision(titulo) {
     log(nombres[miIdx] + " propuso vender " + mapa[pIdx].n + " a " + nombres[comprador] + " por $" + precio);
     document.getElementById('modal').style.display = 'none';
 }
+
+    function escucharOfertas() {
+        db.ref('salas/' + sala + '/ofertas').on('child_added', snap => {
+            let o = snap.val();
+            if(o.para == miIdx) {
+                document.getElementById('modal-title').innerText = "¡Oferta de compra!";
+                document.getElementById('modal-text').innerText = nombres[o.de] + " quiere venderte " + mapa[o.prop].n + " por $" + o.precio;
+                document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="confirmarCompra('${snap.key}')">Aceptar</button>`;
+                document.getElementById('modal').style.display = 'block';
+            }
+        });
+    }
+
     function confirmarCompra(oKey) {
         db.ref('salas/' + sala + '/ofertas/' + oKey).once('value', snap => {
             let o = snap.val();
@@ -940,9 +962,9 @@ function mostrarNotificacionMision(titulo) {
             setTimeout(() => manejarCasilla(nuevaPos), 600);
         }
     }); 
-}    
-
-        function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
+}                                                             
+                                                                                                       
+    function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
     function verSaldos() { db.ref('salas/' + sala + '/jugadores').once('value', snap => { let txt = ""; snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); document.getElementById('modal-title').innerText = "Saldos"; document.getElementById('modal-text').innerHTML = txt; document.getElementById('modal').style.display = 'block'; }); }
     function enviarChat() { 
     let input = document.getElementById('chat-msg');
@@ -964,129 +986,99 @@ function mostrarNotificacionMision(titulo) {
     
     input.value = ""; // Limpiar input
 }
-
-        function sincronizar() { 
-    db.ref('salas/' + sala).on('value', snap => { 
-        let s = snap.val(); 
-        if (!s || !s.jugadores) return;
-
-        let jugadores = s.jugadores;
-
-        // Chat
+    function sincronizar() { 
+        escucharOfertas();
+        
+        db.ref('salas/' + sala + '/chat').on('value', snap => {
         let chatLog = document.getElementById('chat-log');
-        if (chatLog && s.chat) {
-            chatLog.innerHTML = ""; 
-            Object.values(s.chat).forEach(m => {
-                let hora = m.t ? `<small style="color:gray;">[${m.t}]</small> ` : "";
-                let nombre = m.n || "Jugador";
-                chatLog.innerHTML += `<div>${hora}<b>${nombre}:</b> ${m.m}</div>`;
-            });
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }
-
-        // Dinero y Turno
-        if (document.getElementById('dinero-mio')) {
-            document.getElementById('dinero-mio').innerText = (jugadores[miIdx] ? jugadores[miIdx].dinero : 0);
-        }
-        if (document.getElementById('turno-text')) {
-            let nombreTurno = (typeof nombres !== 'undefined' && nombres[s.turno]) ? nombres[s.turno] : "...";
-            document.getElementById('turno-text').innerText = "Turno: " + nombreTurno;
-        }
-
-        // Posiciones
-        if (Array.isArray(jugadores)) {
-            jugadores.forEach((j, i) => { 
-                let el = document.getElementById('p' + i); 
-                if (el && j) {
-                    el.style.display = 'block'; 
-                    let cell = document.getElementById('cell-' + j.pos); 
-                    if (cell) {
-                        el.style.left = (cell.offsetLeft + 30) + 'px'; 
-                        el.style.top = (cell.offsetTop + 30) + 'px';
-                    }
-                }
-            });
-        }
-
-        // Log (arreglado)
-        if(s.log) { 
-            let h = ""; 
-            Object.values(s.log).forEach(l => { 
-                if(l && typeof l === 'string') h += l.replace("undefined", "Jugador") + "<br>"; 
-            }); 
-            document.getElementById('log').innerHTML = h; 
-        }
+        if (!chatLog) return;
+        
+        chatLog.innerHTML = ""; 
+        snap.forEach(msgSnap => {
+            let m = msgSnap.val();
+            
+            // Si existe 'm.t', lo mostramos, si no (mensajes antiguos), no ponemos nada
+            let hora = m.t ? `<small style="color:gray;">[${m.t}]</small> ` : "";
+            
+            chatLog.innerHTML += `<div>${hora}<b>${m.n}:</b> ${m.m}</div>`;
+        });
+        chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll al último mensaje
     });
+        db.ref('salas/' + sala).on('value', snap => { 
+            let s = snap.val(); if(!s) return; 
+            document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
+            document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
+            if(s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n; }
+            s.jugadores.forEach((j, i) => { 
+                let el = document.getElementById('p' + i); el.style.display = 'block'; 
+                let cell = document.getElementById('cell-' + j.pos); 
+                el.style.left = (cell.offsetLeft + 30) + 'px'; el.style.top = (cell.offsetTop + 30) + 'px'; 
+            });
+            if(s.propiedades) { Object.keys(s.propiedades).forEach(pos => { 
+                let cell = document.getElementById('cell-' + pos);
+                if(cell) {
+                    cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner];
+                    let hc = cell.querySelector('.house-container'); hc.innerHTML = "";
+                    let nivel = s.propiedades[pos].nivel || 0;
+                    if(nivel > 0 && nivel < 5) { for(let i=0; i<nivel; i++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
+                    else if(nivel === 5) { let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); }
+                }
+            }); }
+            if(s.log) { let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); document.getElementById('log').innerHTML = h; }
+
+            // 1. Verificación automática de la misión "Caja Fuerte" (se ejecuta siempre)
+            if (s.jugadores[miIdx]) {
+                verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
+            }
+
+            // 2. Bloque de Notificaciones (Detecta si CUALQUIER misión acaba de cumplirse)
+            if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
+                let m = s.jugadores[miIdx].ultimaMision;
+
+                const mensajes = {
+                    "negociador": "¡Has ganado $400 por tu primer intercambio!",
+                    "inversor": "¡Felicidades! Has ganado $200 por ser un Inversor Inicial.",
+                    "coleccionista": "¡Felicidades! Has ganado $300 por completar un set de color.",
+                    "cajafuerte": "¡Felicidades! Has acumulado $2,000. ¡Un premio de $650 irá directo a tu caja fuerte!",
+                    "intocable": "¡El Intocable! Otros jugadores han caído 5 veces en tus propiedades. ¡Has ganado $400!",
+                    "renovador": "¡Excelente constructor! Has construido 5 casas en total. ¡Has ganado $500!",
+                    "monopolioTotal": "¡INCREÍBLE! Has conseguido el Monopolio Total. ¡Premio de $1,500!"
+};
+                
+
+                if (mensajes[m]) {
+                    mostrarNotificacionMision(mensajes[m]);
+                    // Limpiamos el aviso para que no se repita
+                    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
+             }
+        }
+    }); // Cierra el .on('value')
 }
 
-// 2. SEGUNDO: Definimos el DOMContentLoaded al final
-window.addEventListener('DOMContentLoaded', () => {
-    console.log("Iniciando tablero...");
-
-    // Dibujar tablero siempre
-    const boardElement = document.getElementById('board');
-    if (boardElement) {
-        mapa.forEach((m, i) => { 
-            const d = document.createElement('div'); 
-            d.className = 'cell'; 
-            d.id = 'cell-' + i; 
-            d.onclick = () => verPropiedad(i);
-            
-            let g = obtenerGrupo(i);
-            d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
-                           ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}<div class="house-container"></div>`;
-            boardElement.appendChild(d); 
-        });
-    }
-
-    // 3. TERCERO: Conexión a sala (ya usando la función sincronizar que definimos arriba)
-    if (typeof sala !== 'undefined' && sala) {
-        console.log("Conectando a sala:", sala);
-        // Usamos .on para que se conecte apenas la sala exista
-        db.ref('salas/' + sala).on('value', (snap) => {
-            if (snap.exists()) {
-                sincronizar();
-                if (typeof escucharOfertas === 'function') escucharOfertas();
-            } else {
-                console.warn("Esperando a que la sala aparezca en Firebase...");
-            }
-        });
+        document.getElementById('chat-msg').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        enviarChat();
     }
 });
-                                                                                                       
-   window.addEventListener('DOMContentLoaded', () => {
-    console.log("Iniciando tablero...");
-
-    // 1. DIBUJAR TABLERO SIEMPRE (No depende de si la sala existe o no)
-    const boardElement = document.getElementById('board');
-    if (boardElement) {
-        mapa.forEach((m, i) => { 
-            const d = document.createElement('div'); 
-            d.className = 'cell'; 
-            d.id = 'cell-' + i; 
-            d.onclick = () => verPropiedad(i);
-            
-            let g = obtenerGrupo(i);
-            d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
-                           ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}<div class="house-container"></div>`;
-            boardElement.appendChild(d); 
-        });
-    }
-
-    // 2. AHORA SÍ, sincronizamos datos solo si la sala existe
-    if (typeof sala !== 'undefined' && sala) {
-        db.ref('salas/' + sala).once('value', (snap) => {
-            if (snap.exists()) {
-                sincronizar();
-                if (typeof escucharOfertas === 'function') {
-                    escucharOfertas();
-                }
-            } else {
-                console.warn("Sala no creada, esperando...");
-            }
-        });
-    }
-});
+     
+    window.addEventListener('DOMContentLoaded', () => {
+    // 1. Dibujar el tablero
+    mapa.forEach((m, i) => { 
+        const d = document.createElement('div'); 
+        d.className = 'cell'; 
+        d.id = 'cell-' + i; 
+        d.onclick = () => verPropiedad(i);
+        
+        let g = obtenerGrupo(i);
+        d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+                       ${m.n}<br>
+                       ${m.p > 0 ? '$' + m.p : ''}
+                       <div class="house-container"></div>`;
+        document.getElementById('board').appendChild(d); 
+    });
+        
+         
+    });
 </script>
 </body>
 </html>
