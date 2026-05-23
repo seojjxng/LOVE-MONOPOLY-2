@@ -796,9 +796,8 @@ function mostrarNotificacionMision(titulo) {
         htmlCard += `</div>`;
         document.getElementById('modal-text').innerHTML = htmlCard;
         document.getElementById('modal').style.display = 'block';
-    });
+   });
 }
-    }
 
     function pagarFianza() { db.ref('salas/'+sala+'/jugadores/'+miIdx).update({enCarcel: 0, dinero: firebase.database.ServerValue.increment(-100)}); log(nombres[miIdx] + " pagó la fianza."); document.getElementById('modal').style.display = 'none'; }
     function quedarseEnCarcel() { log(nombres[miIdx] + " cumplirá su condena en la cárcel."); document.getElementById('modal').style.display = 'none'; }
