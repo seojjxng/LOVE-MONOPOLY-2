@@ -610,24 +610,39 @@ function mostrarNotificacionMision(titulo) {
         let data = snap.val();
         let misProps = [];
         
+        // Determinar equipo del jugador actual
+        const es2vs2 = (data.modo === '2vs2');
+        const miEquipo = (miIdx === 0 || miIdx === 1) ? 'A' : 'B';
+        
         if(data.propiedades) {
             Object.keys(data.propiedades).forEach(pIdx => {
                 if(data.propiedades[pIdx].owner === miIdx) misProps.push(pIdx);
             });
         }
+        
         document.getElementById('modal-title').innerText = "Revender Propiedad";
         let html = "Selecciona propiedad, precio (100-999) y comprador:<br>";
-        if(misProps.length === 0) { html += "No tienes propiedades."; }
-        else {
+        
+        if(misProps.length === 0) { 
+            html += "No tienes propiedades."; 
+        } else {
             misProps.forEach(pIdx => {
                 let p = mapa[pIdx];
-                // Agregamos el input para el precio personalizado
                 html += `<br><b>${p.n}</b>: 
                          <input type="number" id="precio-${pIdx}" placeholder="250" min="100" max="999" style="width: 60px;"> 
                          <select id="sel-${pIdx}">`;
                 
                 data.jugadores.forEach((j, i) => { 
-                    if(i !== miIdx) html += `<option value="${i}">${nombres[i]}</option>`; 
+                    // Lógica 2vs2: Filtrar compañeros de equipo
+                    let equipoOtro = (i === 0 || i === 1) ? 'A' : 'B';
+                    
+                    if (i !== miIdx) {
+                        if (es2vs2 && equipoOtro === miEquipo) {
+                            // Si es modo 2vs2 y es del mismo equipo, no lo añadimos al select
+                            return; 
+                        }
+                        html += `<option value="${i}">${nombres[i]}</option>`;
+                    }
                 });
                 
                 html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button>`;
@@ -637,7 +652,6 @@ function mostrarNotificacionMision(titulo) {
         document.getElementById('modal').style.display = 'block';
     });
 }
-
     function proponerVenta(pIdx) {
     let comprador = document.getElementById('sel-' + pIdx).value;
     let precioInput = document.getElementById('precio-' + pIdx).value;
@@ -775,10 +789,20 @@ function mostrarNotificacionMision(titulo) {
             if (!prop) {
                 verPropiedad(pos, true);
             } else if (prop.owner !== miIdx) {
+                // Lógica 2vs2: Evitar cobro entre compañeros
+                let es2vs2 = (data.modo === '2vs2');
+                let equipoMiIdx = (miIdx === 0 || miIdx === 1) ? 'A' : 'B';
+                let equipoDueño = (prop.owner === 0 || prop.owner === 1) ? 'A' : 'B';
+
+                if (es2vs2 && equipoMiIdx === equipoDueño) {
+                    log(nombres[miIdx] + " cayó en transporte de su compañero " + nombres[prop.owner] + ". No paga alquiler.");
+                    return;
+                }
+
                 let trans = [8, 24, 26, 27];
                 let count = trans.filter(i => data.propiedades[i] && data.propiedades[i].owner === prop.owner).length;
-                let tabla = { 1: 100, 2: 150, 3: 250, 4: 300 };
-                let alquiler = tabla[count] || 100;
+                let tabla = { 1: 200, 2: 250, 3: 350, 4: 450 }; // Precio actualizado
+                let alquiler = tabla[count] || 200;
                 procesarPago(miIdx, prop.owner, alquiler);
                 log(nombres[miIdx] + " pagó $" + alquiler + " de transporte a " + nombres[prop.owner]);
             } else {
@@ -791,7 +815,6 @@ function mostrarNotificacionMision(titulo) {
     // SI NO ES NINGUNA DE LAS ANTERIORES, ES PROPIEDAD NORMAL
     verPropiedad(pos, true);
 }
-
        function verPropiedad(pos, esCaida = false) {
     let p = mapa[pos];
     if (p.p === 0) return;
@@ -1057,75 +1080,79 @@ function mostrarNotificacionMision(titulo) {
     
     input.value = ""; // Limpiar input
 }
-    function sincronizar() { 
-        escucharOfertas();
-        
-        db.ref('salas/' + sala + '/chat').on('value', snap => {
+    function sincronizar() {
+    escucharOfertas();
+
+    db.ref('salas/' + sala + '/chat').on('value', snap => {
         let chatLog = document.getElementById('chat-log');
         if (!chatLog) return;
-        
-        chatLog.innerHTML = ""; 
+        chatLog.innerHTML = "";
         snap.forEach(msgSnap => {
             let m = msgSnap.val();
-            
-            // Si existe 'm.t', lo mostramos, si no (mensajes antiguos), no ponemos nada
             let hora = m.t ? `<small style="color:gray;">[${m.t}]</small> ` : "";
-            
             chatLog.innerHTML += `<div>${hora}<b>${m.n}:</b> ${m.m}</div>`;
         });
-        chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll al último mensaje
+        chatLog.scrollTop = chatLog.scrollHeight;
     });
-        db.ref('salas/' + sala).on('value', snap => { 
-            let s = snap.val(); if(!s) return; 
-            document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
-            document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
-            if(s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n; }
-            s.jugadores.forEach((j, i) => { 
-                let el = document.getElementById('p' + i); el.style.display = 'block'; 
-                let cell = document.getElementById('cell-' + j.pos); 
-                el.style.left = (cell.offsetLeft + 30) + 'px'; el.style.top = (cell.offsetTop + 30) + 'px'; 
-            });
-            if(s.propiedades) { Object.keys(s.propiedades).forEach(pos => { 
+
+    db.ref('salas/' + sala).on('value', snap => {
+        let s = snap.val(); if (!s) return;
+        document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
+        document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
+        if (s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n; }
+        
+        s.jugadores.forEach((j, i) => {
+            let el = document.getElementById('p' + i); el.style.display = 'block';
+            let cell = document.getElementById('cell-' + j.pos);
+            el.style.left = (cell.offsetLeft + 30) + 'px'; el.style.top = (cell.offsetTop + 30) + 'px';
+        });
+
+        if (s.propiedades) {
+            // --- MODIFICACIÓN MODO 2vs2 PARA COLORES ---
+            const es2vs2 = s.modo === '2vs2';
+            const coloresEquipos = { 'A': '#ffb7b2', 'B': '#b2f2bb' }; // Ajusta estos colores a tu gusto
+
+            Object.keys(s.propiedades).forEach(pos => {
                 let cell = document.getElementById('cell-' + pos);
-                if(cell) {
-                    cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner];
+                if (cell) {
+                    let owner = s.propiedades[pos].owner;
+                    // Si es 2vs2, calculamos el equipo del dueño (0,1 = A, 2,3 = B)
+                    let colorFinal = es2vs2 ? coloresEquipos[(owner === 0 || owner === 1) ? 'A' : 'B'] : colores[owner];
+                    
+                    cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colorFinal;
+                    
                     let hc = cell.querySelector('.house-container'); hc.innerHTML = "";
                     let nivel = s.propiedades[pos].nivel || 0;
-                    if(nivel > 0 && nivel < 5) { for(let i=0; i<nivel; i++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
-                    else if(nivel === 5) { let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); }
+                    if (nivel > 0 && nivel < 5) { for (let i = 0; i < nivel; i++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
+                    else if (nivel === 5) { let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); }
                 }
-            }); }
-            if(s.log) { let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); document.getElementById('log').innerHTML = h; }
-
-            // 1. Verificación automática de la misión "Caja Fuerte" (se ejecuta siempre)
-            if (s.jugadores[miIdx]) {
-                verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
-            }
-
-            // 2. Bloque de Notificaciones (Detecta si CUALQUIER misión acaba de cumplirse)
-            if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
-                let m = s.jugadores[miIdx].ultimaMision;
-
-                const mensajes = {
-                    "negociador": "¡Has ganado $400 por tu primer intercambio!",
-                    "inversor": "¡Felicidades! Has ganado $200 por ser un Inversor Inicial.",
-                    "coleccionista": "¡Felicidades! Has ganado $300 por completar un set de color.",
-                    "cajafuerte": "¡Felicidades! Has acumulado $2,000. ¡Un premio de $650 irá directo a tu caja fuerte!",
-                    "intocable": "¡El Intocable! Otros jugadores han caído 5 veces en tus propiedades. ¡Has ganado $400!",
-                    "renovador": "¡Excelente constructor! Has construido 5 casas en total. ¡Has ganado $500!",
-                    "monopolioTotal": "¡INCREÍBLE! Has conseguido el Monopolio Total. ¡Premio de $1,500!"
-};
-                
-
-                if (mensajes[m]) {
-                    mostrarNotificacionMision(mensajes[m]);
-                    // Limpiamos el aviso para que no se repita
-                    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
-             }
+            });
         }
-    }); // Cierra el .on('value')
-}
+        
+        if (s.log) { let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); document.getElementById('log').innerHTML = h; }
 
+        if (s.jugadores[miIdx]) {
+            verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
+        }
+
+        if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
+            let m = s.jugadores[miIdx].ultimaMision;
+            const mensajes = {
+                "negociador": "¡Has ganado $400 por tu primer intercambio!",
+                "inversor": "¡Felicidades! Has ganado $200 por ser un Inversor Inicial.",
+                "coleccionista": "¡Felicidades! Has ganado $300 por completar un set de color.",
+                "cajafuerte": "¡Felicidades! Has acumulado $2,000. ¡Un premio de $650 irá directo a tu caja fuerte!",
+                "intocable": "¡El Intocable! Otros jugadores han caído 5 veces en tus propiedades. ¡Has ganado $400!",
+                "renovador": "¡Excelente constructor! Has construido 5 casas en total. ¡Has ganado $500!",
+                "monopolioTotal": "¡INCREÍBLE! Has conseguido el Monopolio Total. ¡Premio de $1,500!"
+            };
+            if (mensajes[m]) {
+                mostrarNotificacionMision(mensajes[m]);
+                db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
+            }
+        }
+    });
+}
         document.getElementById('chat-msg').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         enviarChat();
