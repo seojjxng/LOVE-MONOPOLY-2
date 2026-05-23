@@ -211,6 +211,30 @@
     function obtenerCarta() { return cartasEvento[Math.floor(Math.random() * cartasEvento.length)]; }
     function cerrarModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('modal-extra').innerHTML = ""; }
     function log(txt) { db.ref('salas/' + sala + '/log').push(txt); }
+
+        function gestionarFraude() {
+    let extra = document.getElementById('modal-extra');
+    document.getElementById('modal-title').innerText = "Corte Penal";
+    
+    let htmlContent = `
+        <div class="card-property">
+            <p>Has sido acusado de <b>FRAUDE</b> por acumular tres 6 seguidos.</p>
+            <p>Debes pagar una penalidad o esperar un turno en la cárcel.</p>
+            <button class="btn" onclick="pagarPenalidad()">Pagar $150</button>
+            <button class="btn" style="background:#555" onclick="cerrarModal()">Esperar turno</button>
+        </div>
+    `;
+    document.getElementById('modal-text').innerHTML = htmlContent;
+    extra.innerHTML = ""; // Limpiamos botones extra
+    document.getElementById('modal').style.display = 'block';
+}
+
+function pagarPenalidad() {
+    db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ enCarcel: 0 });
+    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => d - 150);
+    log(nombres[miIdx] + " pagó la multa de fraude y fue liberado.");
+    cerrarModal();
+}
     
     function unirse() { 
         if(yaEntro) return;
@@ -540,40 +564,49 @@
 }
     
     function tirarDado() { 
-        if(miIdx === -1) return;
-        db.ref('salas/' + sala).once('value', snap => {
-            let s = snap.val(); 
-            if(s.turno !== miIdx || s.jugadores[miIdx].enCarcel > 0) return;
-            
-            // Lógica de clima inicial al primer movimiento
-            if (s.clima === undefined) {
-                let climaInicial = Math.floor(Math.random() * climas.length);
-                db.ref('salas/' + sala + '/clima').set(climaInicial);
-                
-                let mult = climas[climaInicial].mult;
-                let mensaje = "¡El clima inicial es " + climas[climaInicial].n + "! ";
-                
-                if (mult < 1.0) {
-                    let porcentaje = Math.round((1 - mult) * 100);
-                    mensaje += "Los alquileres tienen un descuento del " + porcentaje + "%.";
-                } else {
-                    mensaje += "Los alquileres están a precio normal.";
-                }
-                
-                log(mensaje);
-            }
+    if(miIdx === -1) return;
+    db.ref('salas/' + sala).once('value', snap => {
+        let s = snap.val(); 
+        if(s.turno !== miIdx || s.jugadores[miIdx].enCarcel > 0) return;
+        
+        // Lógica de clima
+        if (s.clima === undefined) {
+            let climaInicial = Math.floor(Math.random() * climas.length);
+            db.ref('salas/' + sala + '/clima').set(climaInicial);
+            let mult = climas[climaInicial].mult;
+            let mensaje = "¡El clima inicial es " + climas[climaInicial].n + "! " + (mult < 1.0 ? "Descuento del " + Math.round((1 - mult) * 100) + "%." : "Precio normal.");
+            log(mensaje);
+        }
 
-            let dado = Math.floor(Math.random()*6)+1;
-            document.getElementById('dado-valor').innerText = dado;
-            let posActual = Number(s.jugadores[miIdx].pos);
-            let nuevaPos = (posActual + dado) % mapa.length;
-            if (nuevaPos < posActual) { db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + 100); log(nombres[miIdx] + " pasó por SALIDA y cobró $100."); }
-            db.ref('salas/' + sala + '/jugadores/' + miIdx + '/pos').set(nuevaPos);
+        let dado = Math.floor(Math.random() * 6) + 1;
+        document.getElementById('dado-valor').innerText = dado;
+        let seisSeguidos = (s.jugadores[miIdx].seisSeguidos || 0) + (dado === 6 ? 1 : -(seisSeguidos)); // Lógica ajustada
+        if (dado !== 6) seisSeguidos = 0;
+
+        let posActual = Number(s.jugadores[miIdx].pos);
+        let nuevaPos = (posActual + dado) % mapa.length;
+        
+        if (nuevaPos < posActual) { 
+            db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + 200); 
+            log(nombres[miIdx] + " pasó por SALIDA y cobró $200."); 
+        }
+
+        // Lógica de penalización
+        if (seisSeguidos === 3) {
+            log("¡ACUSACIÓN DE FRAUDE! " + nombres[miIdx] + " sacó tres 6 seguidos.");
+            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: 8, enCarcel: 2, seisSeguidos: 0 });
+            gestionarFraude();
             pasarTurno();
-            setTimeout(() => manejarCasilla(nuevaPos), 600);
-        }); 
-    }
-
+        } else if (dado === 6) {
+            log("¡Sacaste un 6! Tienes turno extra.");
+            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: nuevaPos, seisSeguidos: seisSeguidos });
+        } else {
+            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: nuevaPos, seisSeguidos: 0 });
+            pasarTurno();
+        }
+        setTimeout(() => manejarCasilla(nuevaPos), 600);
+    }); 
+}
     function abrirBanco() { const montos = [200, 300, 450, 670, 800, 1000]; document.getElementById('modal-title').innerText = "Solicitar Préstamo"; let htmlExtra = ""; montos.forEach(m => { htmlExtra += `<button class="btn" onclick="pedirPrestamo(${m})">Pedir $${m}</button>`; }); document.getElementById('modal-extra').innerHTML = htmlExtra; document.getElementById('modal').style.display = 'block'; }
     function pedirPrestamo(m) { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let jugador = snap.val(); if (jugador.tienePrestamo) { document.getElementById('modal-title').innerText = "Acción Denegada";
             document.getElementById('modal-text').innerText = "Ya tienes un préstamo activo. ¡Págalo primero antes de solicitar otro!";
