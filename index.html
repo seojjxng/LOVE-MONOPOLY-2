@@ -1311,83 +1311,44 @@ function pasarTurno() {
         }
     });
 
-    // --- NUEVO: Listener para que el Admin vea el botón de inicio ---
+    function verificarInicio() {
+    if (!sala || miIdx !== 0) return; // Solo el admin (0) ejecuta esto
+
     db.ref('salas/' + sala + '/jugadores').on('value', snap => {
         let jugadores = snap.val();
         if (!jugadores) return;
+
         let numJugadores = Object.keys(jugadores).length;
-        
-        if (numJugadores > 1 && miIdx === 0) {
+
+        if (numJugadores > 1) {
             db.ref('salas/' + sala + '/iniciada').once('value', s => {
-                if (!s.val()) {
-                    document.getElementById('modal-inicio').style.display = 'block';
+                let modal = document.getElementById('modal-inicio');
+                // Si el modal existe y la partida NO ha comenzado, lo mostramos
+                if (modal && !s.val()) {
+                    modal.style.display = 'block';
                 }
             });
         }
     });
 }
 
-    // Control automático para mostrar botón de inicio al admin
-    db.ref('salas/' + sala + '/jugadores').on('value', snap => {
-        let jugadores = snap.val();
-        if (!jugadores) return;
-        let numJugadores = Object.keys(jugadores).length;
-        
-        if (numJugadores > 1 && miIdx === 0) {
-            db.ref('salas/' + sala + '/iniciada').once('value', s => {
-                if (!s.val()) {
-                    document.getElementById('modal-inicio').style.display = 'block';
-                }
-            });
-        }
-    });
-}
-
-        // --- FUNCIONES PARA CONTROLAR EL INICIO DE LA PARTIDA ---
-
-// 1. Verifica si se debe mostrar el modal al administrador
-function verificarInicio() {
-    db.ref('salas/' + sala + '/iniciada').once('value', snap => {
-        // Solo mostramos si NO ha empezado y es el jugador 0 (el admin)
-        if (!snap.val() && miIdx === 0) {
-            document.getElementById('modal-inicio').style.display = 'block';
-        }
-    });
-}
+// --- FUNCIÓN PARA INICIAR EL JUEGO ---
 function iniciarJuegoConfirmado() {
-    // Marcamos la partida como iniciada en Firebase
     db.ref('salas/' + sala).update({
         iniciada: true,
         turno: 0 
     });
     
-    // Ocultamos el modal en la pantalla
     let modal = document.getElementById('modal-inicio');
     if (modal) {
         modal.style.display = 'none';
     }
     
-    // Avisamos a todos en el chat
     db.ref('salas/' + sala + '/chat').push({
         n: "Sistema",
         m: "¡La partida ha comenzado!"
     });
 }
-
-
-function configurarListenerInicio() {
-    if (!sala) return;
-    db.ref('salas/' + sala + '/jugadores').on('value', snap => {
-        let jugadores = snap.val();
-        if (jugadores && Object.keys(jugadores).length > 1 && miIdx === 0) {
-            db.ref('salas/' + sala + '/iniciada').once('value', s => {
-                let modal = document.getElementById('modal-inicio');
-                if (modal && !s.val()) modal.style.display = 'block';
-            });
-        }
-    });
-}
-
 // 4. Listener para el chat con protección
 const chatInput = document.getElementById('chat-msg');
 if (chatInput) {
