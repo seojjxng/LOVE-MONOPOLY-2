@@ -146,16 +146,23 @@
 </div>
 
 <div id="modal-misiones" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; text-align: center; z-index: 1000;"> 
-    <h3>Misiones Disponibles</h3>
-    <ul id="lista-misiones" style="list-style: none; padding: 0; text-align: left; max-height: 300px; overflow-y: auto; font-size: 12px;"></ul>
-    <button class="btn" onclick="document.getElementById('modal-misiones').style.display = 'none'">Cerrar</button>
-</div>
-        
-    </div></div><div id="modal">
-    <h3 id="modal-title"></h3>
-    <div id="modal-text"></div>
-    <div id="modal-extra"></div>
-    <button class="btn" id="btn-cerrar" onclick="cerrarModal()">Cerrar</button></div><script>
+        <h3>Misiones Disponibles</h3>
+        <ul id="lista-misiones"></ul>
+        <button class="btn" onclick="document.getElementById('modal-misiones').style.display = 'none'">Cerrar</button>
+    </div>
+
+    <div id="modal-mision-completada" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; background: #fff; padding: 20px; border: 4px solid #ff80bf; border-radius: 15px; text-align: center; z-index: 9999;">
+        <h3 style="color: #ff59aa;">¡Misión Completada!</h3>
+        <p id="msg-mision" style="font-weight: bold;"></p>
+        <button class="btn" onclick="document.getElementById('modal-mision-completada').style.display = 'none'">¡Genial!</button>
+    </div>
+
+    <div id="modal">
+        <h3 id="modal-title"></h3>
+        <div id="modal-text"></div>
+        <div id="modal-extra"></div>
+        <button class="btn" id="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+    </div><script>
     const firebaseConfig = { databaseURL: "https://monopolovely-default-rtdb.firebaseio.com" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -290,7 +297,12 @@ function pagarPenalidad() {
         document.getElementById('modal-misiones').style.display = 'block';
     });
 }
-    
+
+function mostrarNotificacionMision(titulo) {
+    document.getElementById('msg-mision').innerText = titulo;
+    document.getElementById('modal-mision-completada').style.display = 'block';
+}
+        
     function verificarBancarrota(jugadorIdx, saldo) {
         if (saldo < 0) {
             log("¡" + nombres[jugadorIdx] + " ha caído en números rojos!");
