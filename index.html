@@ -389,10 +389,56 @@ function pagarPenalidad() {
                 if (typeof renderizarInterfaz === 'function') renderizarInterfaz();
             } else {
                 alert("Error al intentar unirse. Inténtalo de nuevo.");
-            }
-        });
+            });
     });
 }
+
+
+        function renderizarInterfaz() {
+    const contenedor = document.getElementById('contenedor-configuracion');
+    if (contenedor && miIdx === 0) {
+        contenedor.innerHTML = `
+            <div style="margin-top: 15px; border-top: 1px solid #ffccd5; padding-top: 10px; text-align: center;">
+                <span style="font-size: 10px; color: #ff80bf; font-weight: bold;">MODO DE JUEGO</span>
+                <button class="btn" onclick="abrirMenuJuego()" style="width: 100%; margin-top: 5px; background-color: #ff80bf; color: white;">
+                    ⚙️ Configuración 2vs2
+                </button>
+            </div>
+        `;
+    }
+}
+
+
+        function renderizarTablero() {
+    const board = document.getElementById('board');
+    if (!board) return;
+
+    // Limpiamos el tablero antes de dibujar
+    board.innerHTML = "";
+
+    mapa.forEach((m, i) => { 
+        const d = document.createElement('div'); 
+        d.className = 'cell'; 
+        d.id = 'cell-' + i; 
+        d.onclick = () => verPropiedad(i);
+        
+        let g = obtenerGrupo(i);
+        
+        // Estilo según grupo
+        if (g && g.color === "#f5f5dc") {
+            d.style.border = "3px solid #f5f5dc"; 
+            d.style.backgroundColor = "#fffef0";
+        } else if (g) {
+            d.innerHTML = `<div class="strip" style="background: ${g.color}"></div>`;
+        }
+        
+        // Agregar texto (nombre de la casilla)
+        d.innerHTML += `<div>${m.n}</div>`;
+        board.appendChild(d);
+    });
+}
+        
+        
         // Llamar a esto cuando se detecte que hay más de 1 jugador
 function mostrarBotonInicioSiEsAdmin() {
     db.ref('salas/' + sala + '/iniciada').once('value', snap => {
@@ -710,19 +756,6 @@ function activarModo2vs2() {
     document.getElementById('modal').style.display = 'none';
 }
 
-function renderizarInterfaz() {
-    const contenedor = document.getElementById('contenedor-configuracion');
-    if (contenedor && miIdx === 0) {
-        contenedor.innerHTML = `
-            <div style="margin-top: 15px; border-top: 1px solid #ffccd5; padding-top: 10px; text-align: center;">
-                <span style="font-size: 10px; color: #ff80bf; font-weight: bold;">MODO DE JUEGO</span>
-                <button class="btn" onclick="abrirMenuJuego()" style="width: 100%; margin-top: 5px; background-color: #ff80bf; color: white;">
-                    ⚙️ Configuración 2vs2
-                </button>
-            </div>
-        `;
-    }
-}
    function abrirIntercambio() {
     // 1. LIMPIEZA: Borramos cualquier botón o aviso anterior en el modal
     document.getElementById('modal-extra').innerHTML = ""; 
@@ -1406,33 +1439,41 @@ document.getElementById('chat-msg').addEventListener('keypress', function (e) {
     }
 });
      
-    window.addEventListener('DOMContentLoaded', () => {
-    const board = document.getElementById('board');
-    if (!board) return;
+    Para que tu código funcione y se reconecte automáticamente al refrescar la página, aquí tienes el bloque completo y corregido listo para pegar al final de tu archivo JavaScript (justo antes de </script>):
 
-    mapa.forEach((m, i) => { 
-        const d = document.createElement('div'); 
-        d.className = 'cell'; 
-        d.id = 'cell-' + i; 
-        d.onclick = () => verPropiedad(i);
-        
-        let g = obtenerGrupo(i);
-        
-        // Estilo según grupo
-        if (g && g.color === "#f5f5dc") {
-            d.style.border = "3px solid #f5f5dc"; 
-            d.style.backgroundColor = "#fffef0";
-        } else if (g) {
-            d.innerHTML = `<div class="strip" style="background: ${g.color}"></div>`;
-        }
-        
-        // Agregar texto
-        d.innerHTML += `<div class="contenido" style="font-size: 7px; color: #c71585;">
-                            ${m.n}<br>
-                            ${m.p > 0 ? '$' + m.p : ''}
-                        </div>`;
-        board.appendChild(d);
-    });
+JavaScript
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. Renderizar el tablero
+    const board = document.getElementById('board');
+    if (board) {
+        board.innerHTML = ""; // Limpiar para evitar duplicados
+        mapa.forEach((m, i) => { 
+            const d = document.createElement('div'); 
+            d.className = 'cell'; 
+            d.id = 'cell-' + i; 
+            d.onclick = () => verPropiedad(i);
+            
+            let g = obtenerGrupo(i);
+            
+            if (g && g.color === "#f5f5dc") {
+                d.style.border = "3px solid #f5f5dc"; 
+                d.style.backgroundColor = "#fffef0";
+            } else if (g) {
+                d.innerHTML = `<div class="strip" style="background: ${g.color}"></div>`;
+            }
+            
+            d.innerHTML += `<div class="contenido" style="font-size: 7px; color: #c71585;">
+                                ${m.n}<br>
+                                ${m.p > 0 ? '$' + m.p : ''}
+                            </div>`;
+            board.appendChild(d);
+        });
+    }
+
+    // 2. Reconexión automática
+    if (sessionStorage.getItem('salaActual')) {
+        unirse();
+    }
 });
 </script>
 </body>
