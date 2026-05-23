@@ -1097,16 +1097,13 @@ function mostrarNotificacionMision(titulo) {
         d.onclick = () => verPropiedad(i);
         
         let g = obtenerGrupo(i);
-        
-        // Si es ferrocarril (transparent), no creamos el div .strip
-        const stripHTML = (g && g.id === 'ferrocarriles') 
-            ? '' 
-            : `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>`;
-        
-        d.innerHTML = `${stripHTML}
-                       ${m.n}<br>
-                       ${m.p > 0 ? '$' + m.p : ''}
-                       <div class="house-container"></div>`;
+let colorFondo = (g && g.color) ? g.color : 'transparent';
+
+d.innerHTML = `<div class="strip" style="background: ${colorFondo}"></div>
+               <div class="cell-content">
+                   ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}
+               </div>
+               <div class="house-container"></div>`;
         
         document.getElementById('board').appendChild(d); 
     });
