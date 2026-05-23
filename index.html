@@ -1006,6 +1006,33 @@ function renderizarInterfaz() {
         document.getElementById('modal').style.display = 'block';
     });
 }
+
+        function pasarTurno() {
+    // Asegúrate de que turnosSeis esté definida o borra esta línea si no la usas
+    if (typeof turnosSeis !== 'undefined') turnosSeis = 0; 
+
+    db.ref('salas/'+sala+'/jugadores').once('value', snap => {
+        let total = snap.numChildren();
+        db.ref('salas/'+sala+'/turno').once('value', tSnap => {
+            let t = Number(tSnap.val());
+            let nuevoTurno = (t + 1) % total;
+            
+            db.ref('salas/'+sala+'/jugadores/'+nuevoTurno).once('value', jSnap => {
+                let jugador = jSnap.val();
+                if(jugador.enCarcel > 0) {
+                    log(nombres[nuevoTurno] + " está en la cárcel.");
+                    db.ref('salas/'+sala+'/jugadores/'+nuevoTurno).update({ enCarcel: jugador.enCarcel - 1 });
+                    // Salta al siguiente jugador porque este está en la cárcel
+                    db.ref('salas/'+sala+'/turno').set((nuevoTurno + 1) % total);
+                } else {
+                    db.ref('salas/'+sala+'/turno').set(nuevoTurno);
+                }
+            });
+        });
+    });
+}
+
+        
     function ejecutarEvento(nombreCasilla) {
         let carta = obtenerCarta();
         db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => {
