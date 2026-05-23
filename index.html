@@ -382,28 +382,32 @@
         let data = snap.val();
         let grupo = obtenerGrupo(pos);
         
+        // 1. Extraer la propiedad correctamente
+        let prop = data.propiedades ? data.propiedades[pos] : null;
+
+        // 2. Validar que el jugador posee todas las propiedades del grupo
         let todasPropias = grupo.indices.every(idx => 
             data.propiedades && 
             data.propiedades[idx] && 
             data.propiedades[idx].owner === miIdx
         );
 
-        // 2. Si no posee todas, mostrar el modal de aviso
         if (!todasPropias) {
             document.getElementById('modal-title').innerText = "¡Acción Bloqueada!";
             document.getElementById('modal-text').innerText = "Necesitas ser dueño de todas las propiedades del mismo grupo de color para poder construir.";
-            document.getElementById('modal-extra').innerHTML = ""; // Sin botones extra
+            document.getElementById('modal-extra').innerHTML = ""; 
             document.getElementById('modal').style.display = 'block';
             return;
         }
 
-        // 2. Validar nivel máximo (Hotel es nivel 5)
-        if (prop.nivel >= 5) {
+        // 3. Validar nivel máximo (Hotel es nivel 5)
+        // Ahora 'prop' ya está definida arriba
+        if (prop && prop.nivel >= 5) {
             log("Ya has alcanzado el nivel máximo (Hotel).");
             return;
         }
 
-        // 3. Ejecutar mejora (Descuento de 200)
+        // 4. Ejecutar mejora
         log(nombres[miIdx] + " mejoró " + mapa[pos].n);
         
         db.ref('salas/' + sala + '/propiedades/' + pos + '/nivel')
