@@ -622,7 +622,7 @@ function mostrarNotificacionMision(titulo) {
         <div class="card-property">
             <p>Selecciona una modalidad para esta sala:</p>
             <div id="modal-extra">
-                <button class="btn" onclick="activarModo2vs2()">Activar Modo 2vs2</button>
+                <button class="btn" onclick="activarModo2vs2()">Activar Modo 2v2</button>
             </div>
         </div>
     `;
@@ -633,7 +633,7 @@ function mostrarNotificacionMision(titulo) {
 
 function activarModo2vs2() {
     db.ref('salas/' + sala + '/modo').set('2vs2');
-    log("<b>MODO 2vs2 ACTIVADO:</b> El equipo A (Dog y Horse) y Equipo B (Hat y Car) compiten.");
+    log("<b>MODO 2v2 ACTIVADO:</b> El equipo A (Dog y Horse) y Equipo B (Hat y Car) compitirán por el dominio.");
     document.getElementById('modal').style.display = 'none';
 }
 
