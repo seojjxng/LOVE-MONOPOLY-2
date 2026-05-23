@@ -227,9 +227,9 @@
         <button class="btn" id="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
     </div><script>
     const firebaseConfig = { databaseURL: "https://monopolovely-default-rtdb.firebaseio.com" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    let miIdx = -1, sala = "", yaEntro = false;
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let miIdx = -1, sala = "", yaEntro = false;
     const nombres = ["Dog", "Horse", "Hat", "Car"];
     const colores = ["#ffb7b2", "#ffd8a8", "#b2f2bb", "#a5d8ff"];
 
@@ -335,63 +335,22 @@ function pagarPenalidad() {
     function unirse() {
     let salaGuardada = sessionStorage.getItem('salaActual');
     let inputSala = document.getElementById('sala-id');
-    
-    if (salaGuardada) {
-        sala = salaGuardada;
-    } else if (inputSala && inputSala.value) {
-        sala = inputSala.value.trim();
-    } else {
-        alert("Por favor, ingresa un ID de sala.");
-        return;
-    }
+    sala = salaGuardada || (inputSala ? inputSala.value.trim() : "");
+    if (!sala) return;
 
-    // 1. Verificación de seguridad
     db.ref('salas/' + sala + '/iniciada').once('value', snap => {
-        if (snap.val() === true) {
-            alert("La partida ya ha comenzado, no puedes entrar.");
-            sessionStorage.removeItem('salaActual');
-            location.reload();
-            return;
-        }
-
-        // 2. Uso de Transacción para obtener un índice único
-        db.ref('salas/' + sala + '/jugadores').transaction(jugadores => {
-            if (jugadores === null) {
-                jugadores = {};
-            }
-            
-            // Si el jugador ya entró, abortar para no duplicar
-            if (yaEntro) return; 
-            
-            let idx = Object.keys(jugadores).length;
-            
-            // Definimos al nuevo jugador
-            let miNombre = (typeof nombres !== 'undefined' && nombres[idx]) ? nombres[idx] : ("Jugador " + (idx + 1));
-            
-            jugadores[idx] = {
-                pos: 0, dinero: 1000, enCarcel: 0, nombre: miNombre,
-                tienePrestamo: false, montoPrestamo: 0, online: true
-            };
-            
-            miIdx = idx; // Guardamos el índice real
-            return jugadores;
-        }, (error, committed, snapshot) => {
-            if (committed) {
-                yaEntro = true;
+        if (snap.val() === true) { alert("Partida iniciada"); return; }
+        if (yaEntro) return;
+        yaEntro = true;
+        
+        db.ref('salas/' + sala + '/jugadores').once('value', snap => {
+            miIdx = snap.numChildren();
+            let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
+            jugadorRef.set({ pos: 0, dinero: 1000, nombre: "Jugador " + (miIdx+1), online: true }).then(() => {
                 sessionStorage.setItem('salaActual', sala);
-                
-                // 3. Configurar desconexión y chat después de entrar
-                let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
-                jugadorRef.onDisconnect().update({ online: false });
-                
-                db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: "Jugador " + (miIdx + 1) + " ha entrado." });
-                
                 sincronizar();
-                verificarInicio();
-                if (typeof renderizarInterfaz === 'function') renderizarInterfaz();
-            } else if (error) {
-                alert("Error al intentar unirse: " + error);
-            }
+                configurarListenerInicio(); // Llamada crítica aquí
+            });
         });
     });
 }
@@ -481,11 +440,10 @@ function verificarInicio() {
 
 // 2. Función que bloquea la sala y reparte el primer turno
 function iniciarJuegoConfirmado() {
-    db.ref('salas/' + sala).update({
-        iniciada: true,
-        turno: 0 // Asignamos el primer turno
-    });
-    document.getElementById('modal-inicio').style.display = 'none';
+    db.ref('salas/' + sala).update({ iniciada: true, turno: 0 });
+    let modal = document.getElementById('modal-inicio');
+    if (modal) modal.style.display = 'none';
+    db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: "¡La partida ha comenzado!" });
 }
         
         
@@ -1416,26 +1374,15 @@ function iniciarJuegoConfirmado() {
     });
 }
 
-// 3. Listener que detecta cuándo hay jugadores suficientes para iniciar
-// Este código debe ir idealmente al final de tu función sincronizar
-// 3. Listener que detecta cuándo hay jugadores suficientes para iniciar
-function configurarListenerInicio() {
-    if (!sala) return; // Protección: no hacer nada si no hay sala definida
 
+function configurarListenerInicio() {
+    if (!sala) return;
     db.ref('salas/' + sala + '/jugadores').on('value', snap => {
         let jugadores = snap.val();
-        if (!jugadores) return;
-        
-        let numJugadores = Object.keys(jugadores).length;
-        
-        // Si hay más de 1 jugador y soy el admin (miIdx === 0)
-        if (numJugadores > 1 && miIdx === 0) {
+        if (jugadores && Object.keys(jugadores).length > 1 && miIdx === 0) {
             db.ref('salas/' + sala + '/iniciada').once('value', s => {
                 let modal = document.getElementById('modal-inicio');
-                // Solo mostrar si el modal existe y la partida no ha iniciado
-                if (modal && !s.val()) {
-                    modal.style.display = 'block';
-                }
+                if (modal && !s.val()) modal.style.display = 'block';
             });
         }
     });
@@ -1450,12 +1397,25 @@ if (chatInput) {
         }
     });
 }
-     
 
-window.addEventListener('DOMContentLoaded', () => {
-    renderizarTablero();
+
+       window.addEventListener('DOMContentLoaded', () => {
+    // 1. Renderizar tablero solo si la función existe
+    if (typeof renderizarTablero === 'function') {
+        renderizarTablero();
+    }
+    
+    // 2. Si hay una sala guardada, intentar unirse
     if (sessionStorage.getItem('salaActual')) {
         unirse();
+    }
+    
+    // 3. Configurar el chat (esto también puede ir dentro de DOMContentLoaded)
+    const chatInput = document.getElementById('chat-msg');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') enviarChat();
+        });
     }
 });
 </script>
