@@ -115,12 +115,22 @@
         div.className = 'cell';
         div.id = 'cell-' + i;
         div.onclick = () => manejarCasilla(i);
-        // Mantener la estructura interna que espera tu CSS
-        div.innerHTML = `<div class="strip"></div><span>${mapa[i].n}</span><div class="house-container" id="houses-${i}"></div>`;
+
+        // 1. Buscamos el grupo y definimos el estilo
+        let grupo = obtenerGrupo(i);
+        let colorStyle = grupo ? `background-color: ${grupo.color};` : 'display: none;';
+
+        // 2. Asignamos el HTML con el estilo ya integrado
+        div.innerHTML = `
+            <div class="strip" style="${colorStyle}"></div>
+            <span>${mapa[i].n}</span>
+            <div class="house-container" id="houses-${i}"></div>
+        `;
+
+        // 3. Añadimos el div al tablero UNA sola vez
         board.appendChild(div);
     }
 }
-// Llamar a la función al cargar la página
 window.onload = crearCasillasDOM;
 
     // Variables de clima ampliadas
