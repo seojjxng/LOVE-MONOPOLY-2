@@ -1016,38 +1016,24 @@ function mostrarNotificacionMision(titulo) {
     });
 }
 
-// 2. FUNCIÓN DE GRUPOS (Para evitar errores de "undefined")
-function obtenerGrupo(pos) {
-    if (typeof grupos === 'undefined') return null;
-    return grupos.find(g => g.indices.includes(pos));
-}
-
-// 3. INICIO DEL TABLERO
 window.addEventListener('DOMContentLoaded', () => {
-    const boardElement = document.getElementById('board');
-    if (!boardElement) {
-        console.error("No se encontró el elemento #board en el HTML");
-        return;
-    }
-
-    boardElement.innerHTML = ''; // Limpieza total
-
+    // 1. Dibujar el tablero
     mapa.forEach((m, i) => { 
         const d = document.createElement('div'); 
         d.className = 'cell'; 
         d.id = 'cell-' + i; 
+        d.onclick = () => verPropiedad(i);
         
         let g = obtenerGrupo(i);
-        let color = g ? g.color : 'transparent';
-        
-        d.innerHTML = `<div class="strip" style="background: ${color}"></div>
-                       ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}<div class="house-container"></div>`;
-        
-        boardElement.appendChild(d); 
+        d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+                       ${m.n}<br>
+                       ${m.p > 0 ? '$' + m.p : ''}
+                       <div class="house-container"></div>`;
+        document.getElementById('board').appendChild(d); 
     });
-    
-    console.log("Tablero dibujado exitosamente");
-});
+        
+         
+    });
 </script>
 </body>
 </html>
