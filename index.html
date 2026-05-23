@@ -1079,16 +1079,6 @@ function mostrarNotificacionMision(titulo) {
         enviarChat();
     }
 });
-     
-    El error Uncaught SyntaxError: Unexpected end of input significa que en algún lugar de tu código te falta cerrar una llave } o un paréntesis ). El navegador llegó al final del archivo y el código quedó "abierto".
-
-El error de Cannot use import statement outside a module ocurre porque tu navegador está tratando de ejecutar scripts modernos (import) sin que el archivo HTML sepa que son módulos.
-
-1. Corrige el error de cierre (Unexpected end of input)
-Revisa tu archivo index (3).html. He detectado que probablemente dejaste el DOMContentLoaded abierto o mal cerrado. Tu código debe verse exactamente así al final:
-
-JavaScript
-// ... (código anterior)
 
 window.addEventListener('DOMContentLoaded', () => {
     const board = document.getElementById('board');
