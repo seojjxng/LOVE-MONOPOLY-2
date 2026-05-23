@@ -565,11 +565,12 @@ function pagarPenalidad() {
     
     function tirarDado() { 
     if(miIdx === -1) return;
+    
     db.ref('salas/' + sala).once('value', snap => {
         let s = snap.val(); 
         if(s.turno !== miIdx || s.jugadores[miIdx].enCarcel > 0) return;
         
-        // 1. Clima
+        // 1. Lógica de clima
         if (s.clima === undefined) {
             let climaInicial = Math.floor(Math.random() * climas.length);
             db.ref('salas/' + sala + '/clima').set(climaInicial);
@@ -578,13 +579,13 @@ function pagarPenalidad() {
             log(mensaje);
         }
 
-        // 2. Dado
+        // 2. Cálculo del dado y contador
         let dado = Math.floor(Math.random() * 6) + 1;
         document.getElementById('dado-valor').innerText = dado;
         let contadorActual = s.jugadores[miIdx].seisSeguidos || 0;
         let nuevoContador = (dado === 6) ? contadorActual + 1 : 0;
 
-        // 3. Movimiento lógico
+        // 3. Movimiento
         let posActual = Number(s.jugadores[miIdx].pos);
         let nuevaPos = (posActual + dado) % mapa.length;
         
@@ -603,8 +604,7 @@ function pagarPenalidad() {
             });
             gestionarFraude();
             pasarTurno();
-            // Si va a la cárcel por fraude, procesamos la casilla 8
-            setTimeout(() => manejarCasilla(8), 600); 
+            setTimeout(() => manejarCasilla(8), 600);
         } else {
             db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
                 pos: nuevaPos, 
@@ -616,44 +616,10 @@ function pagarPenalidad() {
             } else {
                 pasarTurno();
             }
-            // Procesamos la casilla normal a la que llegó
             setTimeout(() => manejarCasilla(nuevaPos), 600);
         }
     }); 
-}
-        // Lógica de penalización
-        if (seisSeguidos === 3) {
-            log("¡ACUSACIÓN DE FRAUDE! " + nombres[miIdx] + " sacó tres 6 seguidos.");
-            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: 8, enCarcel: 2, seisSeguidos: 0 });
-            gestionarFraude();
-            pasarTurno();
-        } else if (dado === 6) {
-            log("¡Sacaste un 6! Tienes turno extra.");
-            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: nuevaPos, seisSeguidos: seisSeguidos });
-        } else {
-            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ pos: nuevaPos, seisSeguidos: 0 });
-            pasarTurno();
-        }
-        setTimeout(() => manejarCasilla(nuevaPos), 600);
-    }); 
-}
-    function abrirBanco() { const montos = [200, 300, 450, 670, 800, 1000]; document.getElementById('modal-title').innerText = "Solicitar Préstamo"; let htmlExtra = ""; montos.forEach(m => { htmlExtra += `<button class="btn" onclick="pedirPrestamo(${m})">Pedir $${m}</button>`; }); document.getElementById('modal-extra').innerHTML = htmlExtra; document.getElementById('modal').style.display = 'block'; }
-    function pedirPrestamo(m) { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let jugador = snap.val(); if (jugador.tienePrestamo) { document.getElementById('modal-title').innerText = "Acción Denegada";
-            document.getElementById('modal-text').innerText = "Ya tienes un préstamo activo. ¡Págalo primero antes de solicitar otro!";
-            document.getElementById('modal-extra').innerHTML = "";
-            document.getElementById('modal').style.display = 'block';
-            return;
-        }
-            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
-            dinero: firebase.database.ServerValue.increment(m), 
-            tienePrestamo: true, 
-            montoPrestamo: m 
-        });
-        
-        log(nombres[miIdx] + " pidió un préstamo de $" + m);
-        cerrarModal();
-    });
-}                                                                                           
+}                                                             
                                                                                                        
     function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
     function verSaldos() { db.ref('salas/' + sala + '/jugadores').once('value', snap => { let txt = ""; snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); document.getElementById('modal-title').innerText = "Saldos"; document.getElementById('modal-text').innerHTML = txt; document.getElementById('modal').style.display = 'block'; }); }
