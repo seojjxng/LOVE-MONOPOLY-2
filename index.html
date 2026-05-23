@@ -301,7 +301,16 @@ function pagarPenalidad() {
     });
 }
 
-        
+        function premiarVendedor(vendedorIdx, misionId, titulo, premio) {
+    // 1. Marcar como cumplida en la base de datos
+    db.ref('salas/' + sala + '/jugadores/' + vendedorIdx + '/misionesCumplidas/' + misionId).set(true);
+    
+    // 2. Sumar el premio al dinero del vendedor
+    db.ref('salas/' + sala + '/jugadores/' + vendedorIdx + '/dinero').transaction(d => d + premio);
+    
+    // 3. Notificar en el log
+    log("¡Misión completada: " + titulo + "! " + nombres[vendedorIdx] + " recibió $" + premio);
+}
 
         function abrirBanco() {
     db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
@@ -436,8 +445,7 @@ function pagarPenalidad() {
                 // SOLO SI LA TRANSACCIÓN FUE EXITOSA, actualizamos propiedad y misión
                 db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
                 
-                // Llamamos a la misión aquí
-                completarMision('negociador', 'El negociador', 400);
+                premiarVendedor(o.de, 'negociador', 'El negociador', 400);
                 
                 log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
                 db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
