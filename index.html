@@ -171,12 +171,12 @@
 
         // Configuración de colores por grupo
     const grupos = [
-        {color: "#ff80bf", indices: [1, 3, 4, 5]},
-        {color: "#a5d8ff", indices: [7, 9, 10, 12]},
-        {color: "#b2f2bb", indices: [13, 14, 15, 16]},
-        {color: "#ffd8a8", indices: [18, 19, 20, 22]},
-        {color: "#eebafa", indices: [23, 24, 26, 27]}
-    ];
+    {color: "#ff80bf", indices: [1, 3, 4, 5]},
+    {color: "#a5d8ff", indices: [7, 9, 10, 12]},
+    {color: "#b2f2bb", indices: [13, 14, 15, 16]},
+    {color: "#ffd8a8", indices: [18, 19, 20, 22]},
+    {color: "#eebafa", indices: [23, 24, 26]} // Quitamos el 27 porque ya no existe
+];
 
         function obtenerGrupo(pos) {
     return grupos.find(g => g.indices.includes(pos));
