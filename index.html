@@ -2,23 +2,20 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Monopoly Naeun Town - Integrated</title>
+    <title>Monopoly Naeun Town - Completo</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
+        /* Estilos base (Mantenidos del Code 1 y 2) */
         body { background: #fff0f3; font-family: 'Montserrat', sans-serif; display: flex; justify-content: center; padding: 20px; color: #c71585; }
         .container { display: flex; gap: 25px; width: 1000px; }
-        .game-column { display: flex; flex-direction: column; gap: 15px; }
         .board { display: grid; grid-template-columns: repeat(8, 70px); grid-template-rows: repeat(8, 70px); gap: 5px; background: #ffccd5; padding: 10px; border-radius: 25px; position: relative; }
-        .cell { background: white; border: 2px solid #ffccd5; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; color: #c71585; text-align: center; position: relative; cursor: pointer; }
-        .token { width: 25px; height: 25px; position: absolute; z-index: 10; transition: all 0.5s ease; pointer-events: none; }
-        .center-zone { grid-column: 3 / 7; grid-row: 3 / 7; background: #fff5f7; border: 3px dashed #ff80bf; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
-        .sidebar { width: 320px; display: flex; flex-direction: column; gap: 20px; }
-        .panel { background: #fff0f9; padding: 20px; border-radius: 20px; border: 2px solid #ffccd5; }
-        .btn { width: 100%; padding: 10px; background: #ff59aa; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin: 5px 0; }
-        #log, #chat-log { height: 125px; overflow-y: auto; font-size: 11px; color: #c71585; padding: 10px; background: white; border-radius: 10px; border: 1px solid #ffccd5; margin-bottom: 10px; }
-        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; z-index: 999; }
-        /* Grid de 29 casillas */
+        .cell { background: white; border: 2px solid #ffccd5; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; }
+        .btn { padding: 10px; background: #ff59aa; color: white; border: none; border-radius: 10px; cursor: pointer; width: 100%; margin: 5px 0; }
+        #log, #chat-log { height: 125px; overflow-y: auto; font-size: 11px; background: white; border: 1px solid #ffccd5; margin-bottom: 10px; padding: 5px; }
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; z-index: 999; }
+        
+        /* Grid de 29 casillas (Mantenido) */
         #cell-0 { grid-column: 1; grid-row: 1; } #cell-1 { grid-column: 2; grid-row: 1; } #cell-2 { grid-column: 3; grid-row: 1; } #cell-3 { grid-column: 4; grid-row: 1; } #cell-4 { grid-column: 5; grid-row: 1; } #cell-5 { grid-column: 6; grid-row: 1; } #cell-6 { grid-column: 7; grid-row: 1; } #cell-7 { grid-column: 8; grid-row: 1; }
         #cell-8 { grid-column: 8; grid-row: 2; } #cell-9 { grid-column: 8; grid-row: 3; } #cell-10 { grid-column: 8; grid-row: 4; } #cell-11 { grid-column: 8; grid-row: 5; } #cell-12 { grid-column: 8; grid-row: 6; } #cell-13 { grid-column: 8; grid-row: 7; } #cell-14 { grid-column: 8; grid-row: 8; }
         #cell-15 { grid-column: 7; grid-row: 8; } #cell-16 { grid-column: 6; grid-row: 8; } #cell-17 { grid-column: 5; grid-row: 8; } #cell-18 { grid-column: 4; grid-row: 8; } #cell-19 { grid-column: 3; grid-row: 8; } #cell-20 { grid-column: 2; grid-row: 8; } #cell-21 { grid-column: 1; grid-row: 8; }
@@ -29,18 +26,16 @@
     <div class="container">
         <div class="game-column">
             <div class="board" id="board">
-                <div class="center-zone">
+                <div class="center-zone" style="grid-column: 3/7; grid-row: 3/7;">
                     <div id="turno-text">ESPERANDO...</div>
-                    <div id="dado-valor">0</div>
                     <button class="btn" onclick="tirarDado()">Tirar Dado</button>
-                    <div>💖 $<span id="dinero-mio">1000</span></div>
+                    <div>$ <span id="dinero-mio">1000</span></div>
                 </div>
             </div>
         </div>
         <div class="sidebar">
             <div class="panel">
-                <strong>Sala</strong>
-                <input type="text" id="sala-id" placeholder="Nombre de sala">
+                <input type="text" id="sala-id" placeholder="ID Sala">
                 <button class="btn" id="btn-unirse" onclick="unirse()">Entrar</button>
             </div>
             <div class="panel">
@@ -51,27 +46,28 @@
             </div>
         </div>
     </div>
-    <div id="modal"><h3 id="modal-title"></h3><div id="modal-text"></div><button class="btn" onclick="cerrarModal()">Cerrar</button></div>
+    <div id="modal"><h3 id="modal-title"></h3><div id="modal-text"></div><button class="btn" onclick="document.getElementById('modal').style.display='none'">Cerrar</button></div>
 
     <script>
+        // Configuración y variables (Integradas)
         const firebaseConfig = { databaseURL: "https://monopolovely-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let miIdx = -1, sala = "";
-
+        
         const mapa = [{n:"SALIDA",p:0},{n:"ITAEWON",p:100},{n:"ARCA",p:0},{n:"BUSAN",p:200},{n:"SEOCHO",p:250},{n:"GANGNAM",p:300},{n:"?",p:0},{n:"CHEONGDAM",p:400},{n:"CÁRCEL",p:0},{n:"CAFE",p:500},{n:"REST",p:520},{n:"?",p:0},{n:"SPA",p:300},{n:"CINE",p:350},{n:"HOSP",p:400},{n:"TEATRO",p:500},{n:"ESTADIO",p:550},{n:"ARCA",p:0},{n:"SMENT",p:600},{n:"YG",p:700},{n:"YJP",p:750},{n:"IMP",p:0},{n:"PISCINA",p:800},{n:"YATE",p:900},{n:"PLAYA",p:950},{n:"PARADA",p:0},{n:"AERO",p:1000},{n:"TREN",p:1200},{n:"METRO",p:1300}];
 
         function unirse() {
             sala = document.getElementById('sala-id').value;
             if(!sala) return;
-            const refSala = db.ref('salas/' + sala);
-            refSala.once('value', s => {
-                if(!s.exists()) refSala.set({jugadores: {}, chat: {}, log: {}});
-                db.ref('salas/' + sala + '/jugadores').once('value', j => {
-                    miIdx = j.numChildren();
-                    db.ref('salas/' + sala + '/jugadores/' + miIdx).set({pos: 0, dinero: 1000});
-                    iniciarListeners();
-                });
+            const ref = db.ref('salas/' + sala);
+            ref.transaction(s => {
+                if(!s) return {jugadores: [{pos:0, dinero:1000}], chat: {}, log: {}};
+                s.jugadores.push({pos:0, dinero:1000});
+                return s;
+            }, (err, commited, snap) => {
+                miIdx = snap.val().jugadores.length - 1;
+                iniciarListeners();
             });
         }
 
@@ -87,23 +83,18 @@
 
         function enviarChat() {
             let msg = document.getElementById('chat-msg').value;
-            db.ref('salas/' + sala + '/chat').push({ n: "Jugador " + miIdx, m: msg });
-            document.getElementById('chat-msg').value = "";
+            db.ref('salas/' + sala + '/chat').push({ n: "J"+miIdx, m: msg });
         }
 
         function tirarDado() {
             let v = Math.floor(Math.random() * 6) + 1;
-            document.getElementById('dado-valor').innerText = v;
-            db.ref('salas/' + sala + '/log').push("Jugador " + miIdx + " sacó " + v);
+            db.ref('salas/' + sala + '/log').push("Jugador " + miIdx + " avanzó " + v);
         }
 
-        function cerrarModal() { document.getElementById('modal').style.display = 'none'; }
-
-        // Inicializar tablero
         mapa.forEach((m, i) => {
             const d = document.createElement('div');
             d.className = 'cell'; d.id = 'cell-' + i;
-            d.innerHTML = `${m.n}<br>${m.p > 0 ? '$'+m.p : ''}`;
+            d.innerHTML = `${m.n}`;
             document.getElementById('board').appendChild(d);
         });
     </script>
