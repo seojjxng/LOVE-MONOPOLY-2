@@ -1073,8 +1073,8 @@ function mostrarNotificacionMision(titulo) {
      
     window.addEventListener('DOMContentLoaded', () => {
     console.log("Iniciando tablero...");
-    
-    // 1. Dibujar tablero
+
+    // 1. Dibujar tablero primero
     mapa.forEach((m, i) => { 
         const d = document.createElement('div'); 
         d.className = 'cell'; 
@@ -1086,15 +1086,19 @@ function mostrarNotificacionMision(titulo) {
         document.getElementById('board').appendChild(d); 
     });
 
-    // 2. Verificar que las funciones existen antes de llamarlas
-    if (typeof sincronizar === 'function') {
+    // 2. Verificar que la sala exista antes de sincronizar
+    db.ref('salas/' + sala).once('value', (snap) => {
+        if (!snap.exists()) {
+            console.warn("La sala no existe todavía. Esperando...");
+            return; // No ejecutamos sincronizar si la sala no existe
+        }
+        
+        // Ahora sí, arrancamos todo
         sincronizar();
-    }
-    if (typeof escucharOfertas === 'function') {
-        escucharOfertas();
-    } else {
-        console.error("¡ERROR: escucharOfertas no está definida antes de ser llamada!");
-    }
+        if (typeof escucharOfertas === 'function') {
+            escucharOfertas();
+        }
+    });
 });
 </script>
 </body>
