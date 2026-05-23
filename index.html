@@ -800,6 +800,9 @@ function mostrarNotificacionMision(titulo) {
     let g = obtenerGrupo(pos);
     let esFerrocarril = (g && g.color === "#f5f5dc");
     
+    // Mapeo de iconos para ferrocarriles
+    let iconos = { 8: "https://i.imgur.com/gP32aA7.png", 24: "https://i.imgur.com/UGnykFN.png", 26: "https://i.imgur.com/YILAUtw.png", 27: "https://i.imgur.com/COec9nD.png" };
+    
     let extra = document.getElementById('modal-extra'); 
     extra.innerHTML = "";
     
@@ -825,6 +828,11 @@ function mostrarNotificacionMision(titulo) {
         
         let htmlCard = `<div class="card-property">
             <div class="card-header">${p.n}</div>`;
+            
+        // Icono rosa si es ferrocarril
+        if (esFerrocarril && iconos[pos]) {
+            htmlCard += `<img src="${iconos[pos]}" style="width: 50px; height: 50px; display: block; margin: 5px auto; filter: invert(65%) sepia(34%) saturate(1243%) hue-rotate(293deg) brightness(105%) contrast(102%);">`;
+        }
             
         if (esFerrocarril) {
             htmlCard += `<p>Valor de compra: <b>$600</b></p>`;
@@ -857,7 +865,7 @@ function mostrarNotificacionMision(titulo) {
                 let transportes = [8, 24, 26, 27];
                 let count = transportes.filter(idx => data.propiedades[idx] && data.propiedades[idx].owner === prop.owner).length;
                 let tabla = { 1: 200, 2: 250, 3: 350, 4: 450 };
-                alqFinal = tabla[count] || 100;
+                alqFinal = tabla[count] || 200;
             } else {
                 alqFinal = Math.floor(p.p * porcentajes[prop.nivel || 0] * multClima);
             }
@@ -868,12 +876,12 @@ function mostrarNotificacionMision(titulo) {
             }
         }
         
-        // --- INFORMACIÓN DE PRECIOS (AQUÍ ESTÁ LA TABLA) ---
+        // --- TABLA DE PRECIOS ---
         htmlCard += `<hr><p style="font-size: 11px;"><b>${esFerrocarril ? "Alquiler según transportes:" : "Precios de Alquiler ("+nombreClima+"): "}</b></p>
                      <ul style="font-size: 11px; padding-left: 20px;">`;
         
         if (esFerrocarril) {
-            htmlCard += `<li>1 poseído: $100</li><li>2 poseídos: $150</li><li>3 poseídos: $250</li><li>4 poseídos: $300</li>`;
+            htmlCard += `<li>1 poseído: $200</li><li>2 poseídos: $250</li><li>3 poseídos: $350</li><li>4 poseídos: $450</li>`;
         } else {
             htmlCard += listaAlquileres;
         }
