@@ -1090,27 +1090,26 @@ function mostrarNotificacionMision(titulo) {
      
     window.addEventListener('DOMContentLoaded', () => {
     // 1. Dibujar el tablero
-    mapa.forEach((m, i) => { 
-        const d = document.createElement('div'); 
-        d.className = 'cell'; 
-        d.id = 'cell-' + i; 
-        d.onclick = () => verPropiedad(i);
-        
-       let g = obtenerGrupo(i);
-
-// Generamos el strip solo si hay un color definido y no es transparente
-let stripHTML = (g && g.color !== 'transparent') 
-    ? `<div class="strip" style="background: ${g.color}"></div>` 
-    : ''; // Si es ferrocarril (transparente) o no tiene grupo, no creamos nada.
-
-d.innerHTML = `${stripHTML}
-               <div class="cell-content">
-                   ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}
-               </div>
-               <div class="house-container"></div>`;
-        
-        document.getElementById('board').appendChild(d); 
-    });
+   mapa.forEach((m, i) => { 
+    const d = document.createElement('div'); 
+    d.className = 'cell'; 
+    d.id = 'cell-' + i; 
+    
+    let g = obtenerGrupo(i);
+    
+    // LÓGICA SEGURA: Solo creamos el div de la franja si NO es un ferrocarril
+    let stripHTML = '';
+    if (g && g.color !== 'transparent') {
+        stripHTML = `<div class="strip" style="background: ${g.color}"></div>`;
+    }
+    
+    d.innerHTML = `${stripHTML}
+                   <div class="contenido">
+                       ${m.n}<br>
+                       ${m.p > 0 ? '$' + m.p : ''}
+                   </div>`;
+    
+    document.getElementById('board').appendChild(d); 
 });
 </script>
 </body>
