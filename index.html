@@ -115,6 +115,19 @@
         </div>
     </div>
 
+        </div> <div id="modal-misiones" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; text-align: center; z-index: 1000;"> 
+    <h3>Misiones Disponibles</h3>
+    <ul id="lista-misiones" style="list-style: none; padding: 0; text-align: left; max-height: 300px; overflow-y: auto; font-size: 12px;"></ul>
+    <button class="btn" onclick="document.getElementById('modal-misiones').style.display = 'none'">Cerrar</button>
+</div>
+
+<div id="modal">
+    <h3 id="modal-title"></h3>
+    <div id="modal-text"></div>
+    <div id="modal-extra"></div>
+    <button class="btn" id="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+</div>
+
     <div class="sidebar">
         <div class="panel">
             <strong>Unirse a Sala</strong>
