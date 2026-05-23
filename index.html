@@ -187,7 +187,6 @@
     {n:"ESTADIO",p:550},{n:"ARCA COMUNAL",p:0},{n:"SMENT",p:600},{n:"YG ENT",p:700},{n:"YJP",p:750},{n:"IMPUESTOS",p:0},{n:"HYBE CORP.",p:800},{n:"MOTO",p:900},
     {n:"PARADA",p:0},{n:"AVIÓN",p:1000},{n:"TREN",p:1200}
 ];
-
     // Variables de clima ampliadas
    const climas = [
         {n: "Primavera Soleada", mult: 1.0}, {n: "Primavera Lluviosa, ¡los valores del mercado se mantienen igual!", mult: 1.0},
@@ -1017,36 +1016,37 @@ function mostrarNotificacionMision(titulo) {
     });
 }
 
+// 2. FUNCIÓN DE GRUPOS (Para evitar errores de "undefined")
+function obtenerGrupo(pos) {
+    if (typeof grupos === 'undefined') return null;
+    return grupos.find(g => g.indices.includes(pos));
+}
+
+// 3. INICIO DEL TABLERO
 window.addEventListener('DOMContentLoaded', () => {
-    console.log("Iniciando aplicación...");
-
     const boardElement = document.getElementById('board');
-    if (!boardElement) return; // Si no hay tablero, no hacemos nada
+    if (!boardElement) {
+        console.error("No se encontró el elemento #board en el HTML");
+        return;
+    }
 
-    // Limpiamos contenido previo
-    boardElement.innerHTML = ''; 
-    
-    // Dibujamos las casillas del mapa actual
+    boardElement.innerHTML = ''; // Limpieza total
+
     mapa.forEach((m, i) => { 
         const d = document.createElement('div'); 
         d.className = 'cell'; 
         d.id = 'cell-' + i; 
-        d.onclick = () => { if(typeof verPropiedad === 'function') verPropiedad(i); };
         
-        let g = (typeof obtenerGrupo === 'function') ? obtenerGrupo(i) : null;
-        d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+        let g = obtenerGrupo(i);
+        let color = g ? g.color : 'transparent';
+        
+        d.innerHTML = `<div class="strip" style="background: ${color}"></div>
                        ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}<div class="house-container"></div>`;
+        
         boardElement.appendChild(d); 
     });
-
-    // Conexión a Firebase
-    if (typeof sala !== 'undefined' && sala !== "") {
-        db.ref('salas/' + sala).on('value', (snap) => {
-            if (snap.exists()) {
-                if(typeof sincronizar === 'function') sincronizar();
-            }
-        });
-    }
+    
+    console.log("Tablero dibujado exitosamente");
 });
 </script>
 </body>
