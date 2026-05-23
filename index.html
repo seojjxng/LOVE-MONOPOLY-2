@@ -525,6 +525,7 @@ window.onload = crearCasillasDOM;
         }); 
     }
         
+        
     function sincronizar() { 
         escucharOfertas();
         db.ref('salas/' + sala + '/anuncioClima').on('value', snap => {
@@ -535,12 +536,26 @@ window.onload = crearCasillasDOM;
             let s = snap.val(); if(!s) return; 
             document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
             document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
-            if(s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n; }
+            if(s.clima !== undefined) { 
+    let c = climas[s.clima]; 
+    if(c) {
+        document.getElementById('clima-display').innerText = "Estación: " + c.n; 
+    } else {
+        console.warn("El clima definido en Firebase no existe en el array local:", s.clima);
+    }
+}
             s.jugadores.forEach((j, i) => { 
-                let el = document.getElementById('p' + i); el.style.display = 'block'; 
-                let cell = document.getElementById('cell-' + j.pos); 
-                el.style.left = (cell.offsetLeft + 30) + 'px'; el.style.top = (cell.offsetTop + 30) + 'px'; 
-            });
+    let el = document.getElementById('p' + i); 
+    if (el) {
+        el.style.display = 'block'; 
+        let cell = document.getElementById('cell-' + j.pos); 
+        if (cell) {
+            // Usamos offsetParent para asegurar coordenadas correctas
+            el.style.left = (cell.offsetLeft + 10) + 'px'; 
+            el.style.top = (cell.offsetTop + 10) + 'px'; 
+        }); 
+    }); 
+}
             if(s.propiedades) { Object.keys(s.propiedades).forEach(pos => { 
                 let cell = document.getElementById('cell-' + pos);
                 if(cell) {
