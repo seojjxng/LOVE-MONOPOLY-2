@@ -1196,35 +1196,65 @@ function pasarTurno() {
     });
 
     db.ref('salas/' + sala).on('value', snap => {
-        let s = snap.val(); if (!s) return;
-        document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
-        document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
-        if (s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n; }
+        let s = snap.val(); 
+        if (!s || !s.jugadores) return;
+
+        // 1. Actualizar dinero solo si el jugador existe
+        if (s.jugadores[miIdx]) {
+            document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
+        }
         
-        s.jugadores.forEach((j, i) => {
-            let el = document.getElementById('p' + i); el.style.display = 'block';
-            let cell = document.getElementById('cell-' + j.pos);
-            el.style.left = (cell.offsetLeft + 30) + 'px'; el.style.top = (cell.offsetTop + 30) + 'px';
+        // 2. CORRECCIÓN TURNO: Usar el nombre guardado en la BD
+        let jugadorTurno = s.jugadores[s.turno];
+        document.getElementById('turno-text').innerText = "Turno: " + (jugadorTurno ? jugadorTurno.nombre : "Esperando...");
+
+        if (s.clima !== undefined) { 
+            let c = climas[s.clima]; 
+            document.getElementById('clima-display').innerText = "Estación: " + c.n; 
+        }
+        
+        // 3. DIBUJO INTELIGENTE: Solo mostrar los jugadores ONLINE
+        // Primero ocultamos todos los tokens (asegúrate de que tus elementos tengan una clase común o ID p0, p1, p2, p3)
+        for(let i=0; i<4; i++){
+            let el = document.getElementById('p' + i);
+            if(el) el.style.display = 'none';
+        }
+
+        // Dibujamos solo los que tienen online: true
+        Object.keys(s.jugadores).forEach(i => {
+            let j = s.jugadores[i];
+            let el = document.getElementById('p' + i);
+            
+            if (el && j.online === true) {
+                el.style.display = 'block';
+                let cell = document.getElementById('cell-' + j.pos);
+                if (cell) {
+                    el.style.left = (cell.offsetLeft + 30) + 'px'; 
+                    el.style.top = (cell.offsetTop + 30) + 'px';
+                }
+            }
         });
 
+        // 4. Propiedades y colores
         if (s.propiedades) {
-            // --- MODIFICACIÓN MODO 2vs2 PARA COLORES ---
             const es2vs2 = s.modo === '2vs2';
-            const coloresEquipos = { 'A': '#ffb7b2', 'B': '#b2f2bb' }; // Ajusta estos colores a tu gusto
+            const coloresEquipos = { 'A': '#ffb7b2', 'B': '#b2f2bb' };
 
             Object.keys(s.propiedades).forEach(pos => {
                 let cell = document.getElementById('cell-' + pos);
                 if (cell) {
                     let owner = s.propiedades[pos].owner;
-                    // Si es 2vs2, calculamos el equipo del dueño (0,1 = A, 2,3 = B)
                     let colorFinal = es2vs2 ? coloresEquipos[(owner === 0 || owner === 1) ? 'A' : 'B'] : colores[owner];
                     
                     cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colorFinal;
                     
-                    let hc = cell.querySelector('.house-container'); hc.innerHTML = "";
-                    let nivel = s.propiedades[pos].nivel || 0;
-                    if (nivel > 0 && nivel < 5) { for (let i = 0; i < nivel; i++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
-                    else if (nivel === 5) { let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); }
+                    let hc = cell.querySelector('.house-container'); 
+                    if(hc) {
+                        hc.innerHTML = "";
+                        let nivel = s.propiedades[pos].nivel || 0;
+                        if (nivel > 0 && nivel < 5) { for (let k = 0; k < nivel; k++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
+                        else if (nivel === 5) { let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); }
+                    }
                 }
             });
         }
@@ -1253,7 +1283,8 @@ function pasarTurno() {
         }
     });
 }
-        document.getElementById('chat-msg').addEventListener('keypress', function (e) {
+
+document.getElementById('chat-msg').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         enviarChat();
     }
