@@ -547,9 +547,20 @@
             
             // Lógica de clima inicial al primer movimiento
             if (s.clima === undefined) {
-                let climaInicial = Math.floor(Math.random() * 9); // Indices para Primavera, Verano, Otoño
+                let climaInicial = Math.floor(Math.random() * climas.length);
                 db.ref('salas/' + sala + '/clima').set(climaInicial);
-                log("¡El clima inicial es " + climas[climaInicial].n + "!");
+                
+                let mult = climas[climaInicial].mult;
+                let mensaje = "¡El clima inicial es " + climas[climaInicial].n + "! ";
+                
+                if (mult < 1.0) {
+                    let porcentaje = Math.round((1 - mult) * 100);
+                    mensaje += "Los alquileres tienen un descuento del " + porcentaje + "%.";
+                } else {
+                    mensaje += "Los alquileres están a precio normal.";
+                }
+                
+                log(mensaje);
             }
 
             let dado = Math.floor(Math.random()*6)+1;
