@@ -954,23 +954,13 @@ function mostrarNotificacionMision(titulo) {
 }           
 
         function sincronizar() { 
-    // Usamos .on('value') para escuchar cambios en tiempo real
     db.ref('salas/' + sala).on('value', snap => { 
         let s = snap.val(); 
-        
-        // 1. Validaciones de seguridad
-        if (!s) return;
-        
-        // Si no existen jugadores, no hacemos nada y salimos
-        if (!s.jugadores) {
-            console.log("Esperando a que se unan jugadores...");
-            return;
-        }
+        if (!s || !s.jugadores) return;
 
-        // Definimos jugadores aquí para usarla en todo el bloque
         let jugadores = s.jugadores;
 
-        // 2. Chat
+        // Chat
         let chatLog = document.getElementById('chat-log');
         if (chatLog && s.chat) {
             chatLog.innerHTML = ""; 
@@ -982,7 +972,7 @@ function mostrarNotificacionMision(titulo) {
             chatLog.scrollTop = chatLog.scrollHeight;
         }
 
-        // 3. Dinero y Turno
+        // Dinero y Turno
         if (document.getElementById('dinero-mio')) {
             document.getElementById('dinero-mio').innerText = (jugadores[miIdx] ? jugadores[miIdx].dinero : 0);
         }
@@ -991,7 +981,7 @@ function mostrarNotificacionMision(titulo) {
             document.getElementById('turno-text').innerText = "Turno: " + nombreTurno;
         }
 
-        // 4. Actualizar posiciones
+        // Posiciones
         if (Array.isArray(jugadores)) {
             jugadores.forEach((j, i) => { 
                 let el = document.getElementById('p' + i); 
@@ -1006,61 +996,51 @@ function mostrarNotificacionMision(titulo) {
             });
         }
 
-        // 5. Actualizar propiedades
-        if(s.propiedades) { 
-            Object.keys(s.propiedades).forEach(pos => { 
-                let cell = document.getElementById('cell-' + pos);
-                if(cell) {
-                    cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : (colores[s.propiedades[pos].owner] || "#fff");
-                    let hc = cell.querySelector('.house-container'); 
-                    hc.innerHTML = "";
-                    let nivel = s.propiedades[pos].nivel || 0;
-                    if(nivel > 0 && nivel < 5) { 
-                        for(let i=0; i<nivel; i++) { 
-                            let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); 
-                        } 
-                    } else if(nivel === 5) { 
-                        let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); 
-                    }
-                }
-            }); 
-        }
-
-        // 6. Log (limpiando posibles 'undefined')
+        // Log (arreglado)
         if(s.log) { 
             let h = ""; 
             Object.values(s.log).forEach(l => { 
-                if(l && typeof l === 'string') {
-                    h += l.replace("undefined", "Jugador") + "<br>"; 
-                }
+                if(l && typeof l === 'string') h += l.replace("undefined", "Jugador") + "<br>"; 
             }); 
             document.getElementById('log').innerHTML = h; 
         }
-
-        // 7. Misiones
-        if (jugadores[miIdx]) {
-            verificarMisionCajaFuerte(miIdx, jugadores[miIdx].dinero);
-            
-            if (jugadores[miIdx].ultimaMision) {
-                let m = jugadores[miIdx].ultimaMision;
-                const mensajes = {
-                    "negociador": "¡Has ganado $400 por tu primer intercambio!",
-                    "inversor": "¡Felicidades! Has ganado $200 por ser un Inversor Inicial.",
-                    "coleccionista": "¡Felicidades! Has ganado $300 por completar un set de color.",
-                    "cajafuerte": "¡Felicidades! Has acumulado $2,000. ¡Un premio de $650 irá directo a tu caja fuerte!",
-                    "intocable": "¡El Intocable! Otros jugadores han caído 5 veces en tus propiedades. ¡Has ganado $400!",
-                    "renovador": "¡Excelente constructor! Has construido 5 casas en total. ¡Has ganado $500!",
-                    "monopolioTotal": "¡INCREÍBLE! Has conseguido el Monopolio Total. ¡Premio de $1,500!"
-                };
-
-                if (mensajes[m]) {
-                    mostrarNotificacionMision(mensajes[m]);
-                    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
-                }
-            }
-        }
     });
 }
+
+// 2. SEGUNDO: Definimos el DOMContentLoaded al final
+window.addEventListener('DOMContentLoaded', () => {
+    console.log("Iniciando tablero...");
+
+    // Dibujar tablero siempre
+    const boardElement = document.getElementById('board');
+    if (boardElement) {
+        mapa.forEach((m, i) => { 
+            const d = document.createElement('div'); 
+            d.className = 'cell'; 
+            d.id = 'cell-' + i; 
+            d.onclick = () => verPropiedad(i);
+            
+            let g = obtenerGrupo(i);
+            d.innerHTML = `<div class="strip" style="background: ${g ? g.color : 'transparent'}"></div>
+                           ${m.n}<br>${m.p > 0 ? '$' + m.p : ''}<div class="house-container"></div>`;
+            boardElement.appendChild(d); 
+        });
+    }
+
+    // 3. TERCERO: Conexión a sala (ya usando la función sincronizar que definimos arriba)
+    if (typeof sala !== 'undefined' && sala) {
+        console.log("Conectando a sala:", sala);
+        // Usamos .on para que se conecte apenas la sala exista
+        db.ref('salas/' + sala).on('value', (snap) => {
+            if (snap.exists()) {
+                sincronizar();
+                if (typeof escucharOfertas === 'function') escucharOfertas();
+            } else {
+                console.warn("Esperando a que la sala aparezca en Firebase...");
+            }
+        });
+    }
+});
                                                                                                        
    window.addEventListener('DOMContentLoaded', () => {
     console.log("Iniciando tablero...");
