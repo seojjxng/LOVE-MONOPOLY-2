@@ -333,7 +333,6 @@ function pagarPenalidad() {
 }
     
     function unirse() {
-    // 1. Obtener ID de sala: Prioridad a la sala guardada (reconexión), si no, al input
     let salaGuardada = sessionStorage.getItem('salaActual');
     let inputSala = document.getElementById('sala-id');
     
@@ -346,68 +345,51 @@ function pagarPenalidad() {
         return;
     }
 
-    // --- PROTECCIÓN DE SEGURIDAD ---
-    // Verificamos si la partida ya empezó ANTES de intentar unir al jugador
+    // 1. Verificación de seguridad
     db.ref('salas/' + sala + '/iniciada').once('value', snap => {
         if (snap.val() === true) {
             alert("La partida ya ha comenzado, no puedes entrar.");
-            sessionStorage.removeItem('salaActual'); // Limpiamos por si acaso
-            location.reload(); 
+            sessionStorage.removeItem('salaActual');
+            location.reload();
             return;
         }
-    });
 
-    if (yaEntro) return;
-    yaEntro = true;
-    
-    let btn = document.getElementById('btn-unirse');
-    if (btn) btn.disabled = true;
-
-    // 2. Usamos .once para asegurar que el índice sea único
-    db.ref('salas/' + sala + '/jugadores').once('value', snap => {
-        miIdx = snap.numChildren();
-        
-        let miNombre = (typeof nombres !== 'undefined' && nombres[miIdx]) ? nombres[miIdx] : ("Jugador " + (miIdx + 1));
-        let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
-        
-        // 3. Crear el jugador
-        jugadorRef.set({
-            pos: 0,
-            dinero: 1000,
-            enCarcel: 0,
-            nombre: miNombre,
-            tienePrestamo: false,
-            montoPrestamo: 0,
-            online: true 
-        }).then(() => {
-            // Guardamos la sala para futuras reconexiones
-            sessionStorage.setItem('salaActual', sala);
-
-            // 4. Eventos de desconexión
-            jugadorRef.onDisconnect().update({ online: false });
-            let mensajeRef = db.ref('salas/' + sala + '/chat').push(); 
-            mensajeRef.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
-
-            // 5. Lógica de inicio
-            if (miIdx === 0 && typeof iniciarRelojClima === 'function') {
-                iniciarRelojClima();
-            }
-
-            db.ref('salas/' + sala + '/chat').push({
-                n: "Sistema",
-                m: miNombre + " ha entrado a la sala."
-            });
-
-            // 6. Sincronización y Control de Inicio
-            sincronizar();
-            verificarInicio(); 
+        // 2. Uso de Transacción para obtener un índice único
+        db.ref('salas/' + sala + '/jugadores').transaction(jugadores => {
+            if (jugadores === null) return { 0: { /* datos iniciales */ } }; // Si no existen jugadores
             
-            if (typeof renderizarInterfaz === 'function') renderizarInterfaz();
-
-        }).catch(error => {
-            console.error("Error al unirse a la sala:", error);
-            yaEntro = false;
-            if (btn) btn.disabled = false;
+            // Si el jugador ya entró, abortar para no duplicar
+            if (yaEntro) return; 
+            
+            let idx = Object.keys(jugadores).length;
+            
+            // Definimos al nuevo jugador
+            let miNombre = (typeof nombres !== 'undefined' && nombres[idx]) ? nombres[idx] : ("Jugador " + (idx + 1));
+            
+            jugadores[idx] = {
+                pos: 0, dinero: 1000, enCarcel: 0, nombre: miNombre,
+                tienePrestamo: false, montoPrestamo: 0, online: true
+            };
+            
+            miIdx = idx; // Guardamos el índice real
+            return jugadores;
+        }, (error, committed, snapshot) => {
+            if (committed) {
+                yaEntro = true;
+                sessionStorage.setItem('salaActual', sala);
+                
+                // 3. Configurar desconexión y chat después de entrar
+                let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
+                jugadorRef.onDisconnect().update({ online: false });
+                
+                db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: miNombre + " ha entrado." });
+                
+                sincronizar();
+                verificarInicio();
+                if (typeof renderizarInterfaz === 'function') renderizarInterfaz();
+            } else {
+                alert("Error al intentar unirse. Inténtalo de nuevo.");
+            }
         });
     });
 }
