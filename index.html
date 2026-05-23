@@ -1088,28 +1088,37 @@ function mostrarNotificacionMision(titulo) {
     }
 });
      
-    window.addEventListener('DOMContentLoaded', () => {
+    El error Uncaught SyntaxError: Unexpected end of input significa que en algún lugar de tu código te falta cerrar una llave } o un paréntesis ). El navegador llegó al final del archivo y el código quedó "abierto".
+
+El error de Cannot use import statement outside a module ocurre porque tu navegador está tratando de ejecutar scripts modernos (import) sin que el archivo HTML sepa que son módulos.
+
+1. Corrige el error de cierre (Unexpected end of input)
+Revisa tu archivo index (3).html. He detectado que probablemente dejaste el DOMContentLoaded abierto o mal cerrado. Tu código debe verse exactamente así al final:
+
+JavaScript
+// ... (código anterior)
+
+window.addEventListener('DOMContentLoaded', () => {
     // 1. Dibujar el tablero
-   mapa.forEach((m, i) => { 
-    const d = document.createElement('div'); 
-    d.className = 'cell'; 
-    d.id = 'cell-' + i; 
-    
-    let g = obtenerGrupo(i);
-    
-    // LÓGICA SEGURA: Solo creamos el div de la franja si NO es un ferrocarril
-    let stripHTML = '';
-    if (g && g.color !== 'transparent') {
-        stripHTML = `<div class="strip" style="background: ${g.color}"></div>`;
-    }
-    
-    d.innerHTML = `${stripHTML}
-                   <div class="contenido">
-                       ${m.n}<br>
-                       ${m.p > 0 ? '$' + m.p : ''}
-                   </div>`;
-    
-    document.getElementById('board').appendChild(d); 
+    mapa.forEach((m, i) => { 
+        const d = document.createElement('div'); 
+        d.className = 'cell'; 
+        d.id = 'cell-' + i; 
+        d.onclick = () => verPropiedad(i);
+        
+        let g = obtenerGrupo(i);
+        // Lógica segura para no deformar
+        let stripHTML = (g && g.color !== 'transparent') 
+            ? `<div class="strip" style="background: ${g.color}"></div>` 
+            : '';
+        
+        d.innerHTML = `${stripHTML}
+                       <div class="contenido">
+                           ${m.n}<br>
+                           ${m.p > 0 ? '$' + m.p : ''}
+                       </div>`;
+        document.getElementById('board').appendChild(d); 
+    });
 });
 </script>
 </body>
