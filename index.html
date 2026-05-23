@@ -733,7 +733,78 @@ function mostrarNotificacionMision(titulo) {
             return;
             
         }
-        verPropiedad(pos, true);
+        function verPropiedad(pos, esCaida = false) {
+    let p = mapa[pos];
+    if (p.p === 0) return;
+    let extra = document.getElementById('modal-extra'); 
+    extra.innerHTML = "";
+    
+    db.ref('salas/' + sala).once('value', snap => {
+        let data = snap.val();
+        let prop = data.propiedades ? data.propiedades[pos] : null;
+        let multClima = data.clima !== undefined ? climas[data.clima].mult : 1.0;
+        let nombreClima = data.clima !== undefined ? climas[data.clima].n : 'Normal';
+        
+        document.getElementById('modal-title').innerText = "Tarjeta de Propiedad";
+        
+        let porcentajes = [0.10, 0.15, 0.20, 0.30, 0.40, 0.50];
+        let nivelesNombres = ["Base", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
+        
+        // 1. Siempre calculamos la tabla de precios
+        let listaAlquileres = "";
+        porcentajes.forEach((porc, i) => {
+            let valor = Math.floor(p.p * porc * multClima);
+            listaAlquileres += `<li>${nivelesNombres[i]}: $${valor}</li>`;
+        });
+
+        // 2. Cálculos para el alquiler actual (si la propiedad tiene dueño)
+        let nivelActual = prop ? (prop.nivel || 0) : 0;
+        let alquilerBase = Math.floor(p.p * porcentajes[nivelActual]);
+        let alquilerFinal = Math.floor(alquilerBase * multClima);
+
+        // 3. Empezamos a construir la tarjeta
+        let htmlCard = `<div class="card-property">
+            <div class="card-header">${p.n}</div>
+            <p>Valor de compra: <b>$${p.p}</b></p>`;
+        
+        // --- LÓGICA DE ESTADO ---
+        if (!prop) {
+            htmlCard += `<p>Estado: <b>Disponible</b></p>`;
+            if(esCaida) extra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar</button>`;
+        } else if (prop.owner === miIdx) {
+            htmlCard += `<p>Dueño: <b>Tú</b></p><p>Nivel: <b>${nivelesNombres[prop.nivel || 0]}</b></p>
+                         <p>Estado: <b>${prop.hipotecada ? "Hipotecada" : "Activa"}</b></p>`;
+            if (!prop.hipotecada) {
+                if (prop.nivel < 5) extra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
+                extra.innerHTML += `<button class="btn" style="background: #ad0c0c;" onclick="hipotecar(${pos})">Hipotecar (+$${Math.floor(p.p/2)})</button>`;
+            } else {
+                extra.innerHTML += `<button class="btn" onclick="liberar(${pos})">Liberar (-$${Math.floor(p.p*0.6)})</button>`;
+            }
+        } else {
+            htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>`;
+            if(!prop.hipotecada) {
+                htmlCard += `<div style="border: 1px solid #c71585; padding: 5px; margin-bottom: 10px;">
+                                <p style="margin:0;">Alquiler actual: <b>$${alquilerFinal}</b></p>
+                                ${multClima !== 1 ? `<small style="color:blue;">(Clima: ${nombreClima})</small>` : ''}
+                            </div>`;
+                if(esCaida) {
+                    extra.innerHTML = `<button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alquilerFinal})">Pagar Alquiler</button>
+                                       <button class="btn" style="background:#ff80bf" onclick="intentarEvasion(${miIdx}, ${prop.owner}, ${alquilerFinal})">Intentar Evasión</button>`;
+                }
+            } else {
+                htmlCard += `<p>Estado: <b>Hipotecada</b></p>`;
+            }
+        }
+
+        // 4. AHORA AÑADIMOS LA TABLA SIEMPRE, AL FINAL
+        htmlCard += `<hr><p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios (${nombreClima}):</b></p>
+                     <ul style="font-size: 10px; padding-left: 15px; margin: 0;">${listaAlquileres}</ul>`;
+
+        htmlCard += `</div>`;
+        document.getElementById('modal-text').innerHTML = htmlCard;
+        document.getElementById('modal').style.display = 'block';
+    });
+}
     }
 
     function pagarFianza() { db.ref('salas/'+sala+'/jugadores/'+miIdx).update({enCarcel: 0, dinero: firebase.database.ServerValue.increment(-100)}); log(nombres[miIdx] + " pagó la fianza."); document.getElementById('modal').style.display = 'none'; }
