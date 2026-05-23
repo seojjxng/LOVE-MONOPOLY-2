@@ -137,15 +137,13 @@
     <button class="btn" onclick="document.getElementById('modal-misiones').style.display = 'none'">Cerrar</button>
 </div>
         
-    </div></div><div id="modal">
-    <h3 id="modal-title"></h3>
-    <div id="modal-text"></div>
-    <div id="modal-extra"></div>
-    <div id="modal">
+    </div> <div id="modal">
     <h3 id="modal-title"></h3>
     <div id="modal-text"></div>
     <div id="modal-extra"></div>
 </div>
+
+<script>
     const firebaseConfig = { databaseURL: "https://monopolovely-default-rtdb.firebaseio.com" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
