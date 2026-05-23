@@ -295,10 +295,8 @@ function pagarPenalidad() {
             // 4. Configurar eventos de desconexión
             jugadorRef.onDisconnect().remove();
             
-            db.ref('salas/' + sala + '/chat').onDisconnect().push({
-                n: "Sistema",
-                m: miNombre + " ha abandonado la partida."
-            });
+            let mensajeRef = db.ref('salas/' + sala + '/chat').push(); 
+mensajeRef.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " ha abandonado." });
 
             // 5. Lógica de inicio de sala
             if (miIdx === 0) {
