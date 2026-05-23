@@ -198,6 +198,18 @@ function moverFicha(idx, pos) {
     ficha.style.top = (rect.top - boardRect.top + 20) + 'px';
     ficha.style.left = (rect.left - boardRect.left + 20) + 'px';
 }
+
+        function tirarDado() {
+    let valor = Math.floor(Math.random() * 6) + 1;
+    document.getElementById('dado-valor').innerText = valor;
+    
+    // Aquí actualizamos la posición en Firebase
+    db.ref('salas/' + sala + '/jugadores/' + miIdx + '/pos').transaction(posActual => {
+        let nuevaPos = (Number(posActual) + valor) % mapa.length;
+        return nuevaPos;
+    });
+    log(nombres[miIdx] + " sacó " + valor);
+}
         
     function unirse() { 
     if(yaEntro) return;
@@ -215,6 +227,14 @@ function moverFicha(idx, pos) {
         db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: nombres[miIdx] + " entró al juego" });
         
         sincronizar();
+
+        db.ref('salas/' + sala + '/jugadores').on('child_changed', snap => {
+    let jugadorIdx = snap.key;
+    let datos = snap.val();
+    if (datos.pos !== undefined) {
+        moverFicha(jugadorIdx, datos.pos);
+    }
+});
     }); 
 }
 
@@ -222,25 +242,21 @@ function moverFicha(idx, pos) {
     function mejorar(pos) { log(nombres[miIdx] + " mejoró " + mapa[pos].n); db.ref('salas/' + sala + '/propiedades/' + pos + '/nivel').transaction(n => (Number(n) || 0) + 1); db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').transaction(d => Number(d) - 50); document.getElementById('modal').style.display = 'none'; }
     function cerrarModal() { document.getElementById('modal').style.display = 'none'; }
 
-    function sincronizar() { 
-    // Limpiar chat
+    function sincronizar() {
     document.getElementById('chat-log').innerHTML = "";
-
-    // Cargar historial
-    db.ref('salas/' + sala + '/chat').limitToLast(10).once('value', snapshot => {
+    // Solo cargamos los mensajes una vez al entrar
+    db.ref('salas/' + sala + '/chat').limitToLast(20).once('value', snapshot => {
         snapshot.forEach(childSnapshot => {
             let m = childSnapshot.val();
             document.getElementById('chat-log').innerHTML += `<div><b>${m.n}:</b> ${m.m}</div>`;
         });
         
-        // Escuchar nuevos
-        db.ref('salas/' + sala + '/chat').limitToLast(1).on('child_added', s => {
+        // Listener para mensajes nuevos SIN duplicar
+        db.ref('salas/' + sala + '/chat').orderByKey().startAt(new Date().getTime().toString()).on('child_added', s => {
             let m = s.val();
-            // Evitar duplicar el último histórico
             document.getElementById('chat-log').innerHTML += `<div><b>${m.n}:</b> ${m.m}</div>`;
         });
     });
-    // ¡IMPORTANTE!: No llames a dibujarTablero aquí.
 }
 
         window.onload = () => {
