@@ -603,66 +603,80 @@ function mostrarNotificacionMision(titulo) {
     }
 
    function verPropiedad(pos, esCaida = false) {
-        let p = mapa[pos];
-        if (p.p === 0) return;
-        let extra = document.getElementById('modal-extra'); extra.innerHTML = "";
+    let p = mapa[pos];
+    if (p.p === 0) return;
+    let extra = document.getElementById('modal-extra'); extra.innerHTML = "";
+    
+    db.ref('salas/' + sala).once('value', snap => {
+        let data = snap.val();
+        let prop = data.propiedades ? data.propiedades[pos] : null;
+        let multClima = data.clima !== undefined ? climas[data.clima].mult : 1.0;
+        let nombreClima = data.clima !== undefined ? climas[data.clima].n : 'Normal';
         
-        db.ref('salas/' + sala).once('value', snap => {
-            let data = snap.val();
-            let prop = data.propiedades ? data.propiedades[pos] : null;
-            let multClima = data.clima !== undefined ? climas[data.clima].mult : 1.0;
-            
-            document.getElementById('modal-title').innerText = "Tarjeta de Propiedad";
-            let porcentajes = [0.10, 0.15, 0.20, 0.30, 0.40, 0.50];
-            let nivelesNombres = ["Base", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
-            let listaAlquileres = "";
-            porcentajes.forEach((porc, i) => {
-                listaAlquileres += `<li>${nivelesNombres[i]}: $${Math.floor(p.p * porc * multClima)}</li>`;
-            });
-
-            let niveles = ["Ninguna", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
-            let htmlCard = `<div class="card-property">
-                <div class="card-header">${p.n}</div>
-                <p>Valor de compra: <b>$${p.p}</b></p>`;
-            
-            if (!prop) {
-                htmlCard += `<p>Estado: <b>Disponible</b></p>`;
-                if(esCaida) extra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar</button>`;
-            } else if (prop.owner === miIdx) {
-                htmlCard += `<p>Dueño: <b>Tú</b></p><p>Nivel: <b>${niveles[prop.nivel || 0]}</b></p>
-                             <p>Estado: <b>${prop.hipotecada ? "Hipotecada" : "Activa"}</b></p>`;
-                if (!prop.hipotecada) {
-                    if (prop.nivel < 5) extra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
-                    extra.innerHTML += `<button class="btn" style="background: #ad0c0c;" onclick="hipotecar(${pos})">Hipotecar (+$${Math.floor(p.p/2)})</button>`;
-                } else {
-                    extra.innerHTML += `<button class="btn" onclick="liberar(${pos})">Liberar (-$${Math.floor(p.p*0.6)})</button>`;
-                }
-            } else {
-                let alquilerBase = Math.floor(p.p * porcentajes[prop ? prop.nivel || 0 : 0]);
-            let alquilerFinal = Math.floor(alquilerBase * multClima);
-                
-                if(prop.hipotecada) {
-                    htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b> (Hipotecada)</p>`;
-                } else {
-                    htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>
-                     <p>Alquiler actual: <b>$${alquilerFinal}</b></p>
-                     <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios (Clima: ${data.clima !== undefined ? climas[data.clima].n : '-'}):</b></p>
-                     <ul style="font-size: 10px; padding-left: 15px; margin: 0;">${listaAlquileres}</ul>`;
-                    
-                    if(esCaida && prop.owner !== miIdx) {
-            alquilerPendiente = {a: prop.owner, m: alquilerFinal}; // Usamos el final
-            extra.innerHTML = `
-                <button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alquilerFinal})">Pagar Alquiler</button>
-                <button class="btn" style="background:#ff80bf" onclick="intentarEvasion(${miIdx}, ${prop.owner}, ${alquilerFinal})">Intentar Evasión</button>
-           `;
-                    }
-                } // Cierre del else de hipotecada
-            }
-            htmlCard += `</div>`;
-            document.getElementById('modal-text').innerHTML = htmlCard;
-            document.getElementById('modal').style.display = 'block';
+        document.getElementById('modal-title').innerText = "Tarjeta de Propiedad";
+        
+        let porcentajes = [0.10, 0.15, 0.20, 0.30, 0.40, 0.50];
+        let nivelesNombres = ["Base", "1 Casa", "2 Casas", "3 Casas", "4 Casas", "Hotel"];
+        
+        // 1. Preparamos la tabla de referencia
+        let listaAlquileres = "";
+        porcentajes.forEach((porc, i) => {
+            let valor = Math.floor(p.p * porc * multClima);
+            listaAlquileres += `<li>${nivelesNombres[i]}: $${valor}</li>`;
         });
-    }
+
+        // 2. Cálculos para el alquiler actual
+        let nivelActual = prop ? (prop.nivel || 0) : 0;
+        let alquilerBase = Math.floor(p.p * porcentajes[nivelActual]);
+        let alquilerFinal = Math.floor(alquilerBase * multClima);
+
+        let htmlCard = `<div class="card-property">
+            <div class="card-header">${p.n}</div>
+            <p>Valor de compra: <b>$${p.p}</b></p>`;
+        
+        if (!prop) {
+            htmlCard += `<p>Estado: <b>Disponible</b></p>`;
+            if(esCaida) extra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar</button>`;
+        } else if (prop.owner === miIdx) {
+            htmlCard += `<p>Dueño: <b>Tú</b></p><p>Nivel: <b>${nivelesNombres[prop.nivel || 0]}</b></p>
+                         <p>Estado: <b>${prop.hipotecada ? "Hipotecada" : "Activa"}</b></p>`;
+            
+            // Sección Informativa de Alquiler para el dueño
+            htmlCard += `<div style="background:#f9f9f9; padding:5px; font-size:12px;">
+                         Alquiler actual: <b>$${alquilerFinal}</b> 
+                         <small>(${multClima !== 1 ? 'Clima ' + nombreClima + ' activo' : 'Clima normal'})</small></div>`;
+
+            if (!prop.hipotecada) {
+                if (prop.nivel < 5) extra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
+                extra.innerHTML += `<button class="btn" style="background: #ad0c0c;" onclick="hipotecar(${pos})">Hipotecar (+$${Math.floor(p.p/2)})</button>`;
+            } else {
+                extra.innerHTML += `<button class="btn" onclick="liberar(${pos})">Liberar (-$${Math.floor(p.p*0.6)})</button>`;
+            }
+        } else {
+            if(prop.hipotecada) {
+                htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b> (Hipotecada)</p>`;
+            } else {
+                htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>
+                     <div style="border: 1px solid #c71585; padding: 5px; margin-bottom: 10px;">
+                        <p style="margin:0;">Alquiler a pagar: <b>$${alquilerFinal}</b></p>
+                        ${multClima !== 1 ? `<small style="color:blue;">(Base: $${alquilerBase} | Clima: ${nombreClima})</small>` : ''}
+                     </div>
+                     <p style="font-size: 10px; margin-top: 5px;"><b>Tabla de precios (${nombreClima}):</b></p>
+                     <ul style="font-size: 10px; padding-left: 15px; margin: 0;">${listaAlquileres}</ul>`;
+                
+                if(esCaida && prop.owner !== miIdx) {
+                    extra.innerHTML = `
+                        <button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alquilerFinal})">Pagar Alquiler</button>
+                        <button class="btn" style="background:#ff80bf" onclick="intentarEvasion(${miIdx}, ${prop.owner}, ${alquilerFinal})">Intentar Evasión</button>
+                    `;
+                }
+            }
+        }
+        htmlCard += `</div>`;
+        document.getElementById('modal-text').innerHTML = htmlCard;
+        document.getElementById('modal').style.display = 'block';
+    });
+}
 
     function hipotecar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: true}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + Math.floor(mapa[pos].p/2)); log(nombres[miIdx] + " hipotecó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
     function liberar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: false}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d - Math.floor(mapa[pos].p*0.6)); log(nombres[miIdx] + " liberó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
