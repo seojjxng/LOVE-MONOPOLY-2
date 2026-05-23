@@ -382,16 +382,18 @@
         let data = snap.val();
         let grupo = obtenerGrupo(pos);
         
-        // 1. Validar que el grupo existe y el jugador posee todas las propiedades
         let todasPropias = grupo.indices.every(idx => 
             data.propiedades && 
             data.propiedades[idx] && 
             data.propiedades[idx].owner === miIdx
         );
 
-        // 2. Si no posee todas, mostrar error y detener la ejecución
+        // 2. Si no posee todas, mostrar el modal de aviso
         if (!todasPropias) {
-            alert("¡Necesitas ser dueño de todas las propiedades del mismo grupo de color para poder mejorar!");
+            document.getElementById('modal-title').innerText = "¡Acción Bloqueada!";
+            document.getElementById('modal-text').innerText = "Necesitas ser dueño de todas las propiedades del mismo grupo de color para poder construir.";
+            document.getElementById('modal-extra').innerHTML = ""; // Sin botones extra
+            document.getElementById('modal').style.display = 'block';
             return;
         }
 
