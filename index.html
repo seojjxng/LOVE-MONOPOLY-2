@@ -1154,14 +1154,17 @@ window.abrirIntercambio = function() {
     input.value = ""; // Limpiar input
 }
     window.sincronizar = function() {
-    // PROTECCIÓN: Si no hay sala definida, no hacemos nada.
-    // Esto evita que se disparen eventos de Firebase en el Lobby.
-    if (typeof sala === 'undefined' || !sala) return;
+    // PROTECCIÓN TOTAL: Si no hemos entrado, no intentamos sincronizar nada.
+    if (!yaEntro || !sala) {
+        console.log("Sincronización en espera: Usuario no ha entrado a la sala.");
+        return;
+    }
 
     escucharOfertas();
     
     // 1. Sincronización del Chat
     db.ref('salas/' + sala + '/chat').on('value', snap => {
+        if (!yaEntro) return; // Doble validación dentro del evento
         let chatLog = document.getElementById('chat-log');
         if (!chatLog) return;
         chatLog.innerHTML = ""; 
@@ -1173,8 +1176,9 @@ window.abrirIntercambio = function() {
         chatLog.scrollTop = chatLog.scrollHeight;
     });
 
-    // 2. Sincronización del Juego (Turnos, Posiciones y Propiedades)
+    // 2. Sincronización del Juego
     db.ref('salas/' + sala).on('value', snap => { 
+        if (!yaEntro) return; // Doble validación dentro del evento
         let s = snap.val(); 
         if(!s) return; 
 
@@ -1183,7 +1187,7 @@ window.abrirIntercambio = function() {
             document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
         }
 
-        // --- CORRECCIÓN DE TURNOS ---
+        // Actualizar Turnos
         let turnoText = document.getElementById('turno-text');
         if (turnoText && s.turno !== undefined && typeof nombres !== 'undefined') {
             turnoText.innerText = "Turno: " + (nombres[s.turno] || "Jugador " + (s.turno + 1));
@@ -1210,16 +1214,14 @@ window.abrirIntercambio = function() {
             });
         }
 
-        // Actualizar Propiedades (Colores y casas)
+        // Actualizar Propiedades
         if(s.propiedades) { 
             Object.keys(s.propiedades).forEach(pos => { 
                 let cell = document.getElementById('cell-' + pos);
                 if(cell) {
-                    // Actualizar dueño
                     if (typeof colores !== 'undefined') {
                         cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner];
                     }
-                    // Actualizar casas/hoteles
                     let hc = cell.querySelector('.house-container'); 
                     if (hc) {
                         hc.innerHTML = "";
@@ -1241,7 +1243,6 @@ window.abrirIntercambio = function() {
         // Misiones
         if (s.jugadores && s.jugadores[miIdx]) {
             if (typeof verificarMisionCajaFuerte === 'function') verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
-            
             if (s.jugadores[miIdx].ultimaMision) {
                 let m = s.jugadores[miIdx].ultimaMision;
                 const mensajes = {
