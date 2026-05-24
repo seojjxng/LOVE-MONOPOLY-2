@@ -602,8 +602,7 @@ function mostrarNotificacionMision(titulo) {
     });
 }
 
-   function abrirIntercambio() {
-    // 1. LIMPIEZA: Borramos cualquier botón o aviso anterior en el modal
+   window.abrirIntercambio = function() {
     document.getElementById('modal-extra').innerHTML = ""; 
     
     db.ref('salas/' + sala).once('value', snap => {
@@ -615,24 +614,31 @@ function mostrarNotificacionMision(titulo) {
                 if(data.propiedades[pIdx].owner === miIdx) misProps.push(pIdx);
             });
         }
+        
         document.getElementById('modal-title').innerText = "Revender Propiedad";
-        let html = "Selecciona propiedad, precio (100-999) y comprador:<br>";
-        if(misProps.length === 0) { html += "No tienes propiedades."; }
-        else {
+        
+        // Usamos un contenedor que siga el estilo de tus tarjetas
+        let html = `<div class="card-property">`;
+        html += "Selecciona propiedad, precio (mayor a 250) y comprador:<br><br>";
+        
+        if(misProps.length === 0) { 
+            html += "No tienes propiedades."; 
+        } else {
             misProps.forEach(pIdx => {
                 let p = mapa[pIdx];
-                // Agregamos el input para el precio personalizado
-                html += `<br><b>${p.n}</b>: 
-                         <input type="number" id="precio-${pIdx}" placeholder="250" min="100" max="999" style="width: 60px;"> 
+                html += `<b>${p.n}</b>: 
+                         <input type="number" id="precio-${pIdx}" placeholder="251" min="251" max="999" style="width: 60px;"> 
                          <select id="sel-${pIdx}">`;
                 
                 data.jugadores.forEach((j, i) => { 
                     if(i !== miIdx) html += `<option value="${i}">${nombres[i]}</option>`; 
                 });
                 
-                html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button>`;
+                html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button><br><br>`;
             });
         }
+        html += `</div>`;
+        
         document.getElementById('modal-text').innerHTML = html;
         document.getElementById('modal').style.display = 'block';
     });
@@ -691,8 +697,9 @@ function mostrarNotificacionMision(titulo) {
             return;
         }, (error, committed) => {
             if (error) {
-                mostrarAvisoModal("Error", "Hubo un problema al procesar el pago.");
+                console.error("Error en la transacción: ", error);
             } else if (committed) {
+                // 1. Ejecución de Misiones
                 verificarMisionInversor(miIdx);
                 verificarMisionColeccionista(miIdx);
                 verificarMisionMonopolioTotal(miIdx);
@@ -703,45 +710,24 @@ function mostrarNotificacionMision(titulo) {
                     verificarMisionCajaFuerte(miIdx, s.val());
                 });
 
-                db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
+                // 2. Acciones finales: Actualizar propiedad, Log y Borrar oferta
+                db.ref('salas/' + sala + '/propiedades/' + o.prop).update({
+                    owner: miIdx, 
+                    hipotecada: false
+                });
+                
                 log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
                 db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
                 
+                // 3. Cierre del modal
                 let modal = document.getElementById('modal');
                 if (modal) modal.style.display = 'none';
-            } else {
-                // AQUÍ ESTÁ EL AVISO QUE QUERÍAS
-                mostrarAvisoModal("Fondos Insuficientes", "No tienes suficiente dinero para completar esta compra.");
             }
+            // Si 'committed' es falso (sin fondos), simplemente no hace nada
         });
     });
 };
 
-        window.mostrarAvisoModal = function(titulo, mensaje) {
-    let modal = document.getElementById('modal');
-    let modalTitle = document.getElementById('modal-title');
-    let modalText = document.getElementById('modal-text');
-    let modalExtra = document.getElementById('modal-extra');
-
-    if (!modal) return;
-
-    // Asignamos el título
-    modalTitle.innerText = titulo;
-
-    // Usamos un contenedor con un estilo limpio que hereda del CSS existente
-    // Se ve bien porque usa el mismo formato que los avisos del juego
-    modalText.innerHTML = `
-        <div style="padding: 25px; text-align: center; font-size: 16px;">
-            <p style="margin: 0; line-height: 1.5;">${mensaje}</p>
-        </div>
-    `;
-
-    // Limpiamos los botones para que el modal se vea como un aviso informativo
-    modalExtra.innerHTML = ""; 
-    
-    // Mostramos el modal
-    modal.style.display = 'block';
-};
         
 
     function hipotecar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: true}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + Math.floor(mapa[pos].p/2)); log(nombres[miIdx] + " hipotecó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
