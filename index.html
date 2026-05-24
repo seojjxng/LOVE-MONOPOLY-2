@@ -728,9 +728,9 @@ window.verificarMisionMonopolioTotal = function(jugadorIdx) {
                     ref.update({ 'misionesCumplidas/monopolioTotal': true, 'ultimaMision': 'monopolioTotal' });
                     ref.child('dinero').transaction(d => (d || 0) + 1500);
                     if (typeof log === 'function') log((nombres[jugadorIdx] || "Jugador") + " completó la misión: ¡Monopolio Total!");
-                }
-            });
-        }
+               ;
+            }
+        });
     });
 };
 
