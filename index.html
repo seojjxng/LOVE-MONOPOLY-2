@@ -1057,55 +1057,92 @@ function mostrarNotificacionMision(titulo) {
     
     input.value = ""; // Limpiar input
 }
-    function sincronizar() { 
-        escucharOfertas();
-        
-        db.ref('salas/' + sala + '/chat').on('value', snap => {
+    window.sincronizar = function() {
+    escucharOfertas();
+    
+    // 1. Sincronización del Chat
+    db.ref('salas/' + sala + '/chat').on('value', snap => {
         let chatLog = document.getElementById('chat-log');
         if (!chatLog) return;
-        
         chatLog.innerHTML = ""; 
         snap.forEach(msgSnap => {
             let m = msgSnap.val();
-            
-            // Si existe 'm.t', lo mostramos, si no (mensajes antiguos), no ponemos nada
             let hora = m.t ? `<small style="color:gray;">[${m.t}]</small> ` : "";
-            
             chatLog.innerHTML += `<div>${hora}<b>${m.n}:</b> ${m.m}</div>`;
         });
-        chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll al último mensaje
+        chatLog.scrollTop = chatLog.scrollHeight;
     });
-        db.ref('salas/' + sala).on('value', snap => { 
-            let s = snap.val(); if(!s) return; 
+
+    // 2. Sincronización del Juego (Turnos, Posiciones y Propiedades)
+    db.ref('salas/' + sala).on('value', snap => { 
+        let s = snap.val(); 
+        if(!s) return; 
+
+        // Actualizar dinero
+        if (s.jugadores && s.jugadores[miIdx]) {
             document.getElementById('dinero-mio').innerText = s.jugadores[miIdx].dinero;
-            document.getElementById('turno-text').innerText = "Turno: " + nombres[s.turno];
-            if(s.clima !== undefined) { let c = climas[s.clima]; document.getElementById('clima-display').innerText = "Estación: " + c.n; }
+        }
+
+        // --- CORRECCIÓN DE TURNOS ---
+        // Verificamos que el turno exista antes de intentar mostrarlo
+        let turnoText = document.getElementById('turno-text');
+        if (turnoText && s.turno !== undefined && nombres) {
+            turnoText.innerText = "Turno: " + (nombres[s.turno] || "Jugador " + (s.turno + 1));
+        }
+
+        // Actualizar Clima
+        if(s.clima !== undefined) { 
+            let c = climas[s.clima]; 
+            document.getElementById('clima-display').innerText = "Estación: " + c.n; 
+        }
+
+        // Actualizar Fichas de jugadores
+        if (s.jugadores) {
             s.jugadores.forEach((j, i) => { 
-                let el = document.getElementById('p' + i); el.style.display = 'block'; 
-                let cell = document.getElementById('cell-' + j.pos); 
-                el.style.left = (cell.offsetLeft + 30) + 'px'; el.style.top = (cell.offsetTop + 30) + 'px'; 
+                let el = document.getElementById('p' + i); 
+                if (el && j) {
+                    el.style.display = 'block'; 
+                    let cell = document.getElementById('cell-' + j.pos); 
+                    if (cell) {
+                        el.style.left = (cell.offsetLeft + 30) + 'px'; 
+                        el.style.top = (cell.offsetTop + 30) + 'px';
+                    }
+                }
             });
-            if(s.propiedades) { Object.keys(s.propiedades).forEach(pos => { 
+        }
+
+        // Actualizar Propiedades (Colores y casas)
+        if(s.propiedades) { 
+            Object.keys(s.propiedades).forEach(pos => { 
                 let cell = document.getElementById('cell-' + pos);
                 if(cell) {
-                    cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner];
-                    let hc = cell.querySelector('.house-container'); hc.innerHTML = "";
-                    let nivel = s.propiedades[pos].nivel || 0;
-                    if(nivel > 0 && nivel < 5) { for(let i=0; i<nivel; i++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
-                    else if(nivel === 5) { let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); }
+                    // Actualizar dueño
+                    if (typeof colores !== 'undefined') {
+                        cell.style.backgroundColor = s.propiedades[pos].hipotecada ? "#ccc" : colores[s.propiedades[pos].owner];
+                    }
+                    // Actualizar casas/hoteles
+                    let hc = cell.querySelector('.house-container'); 
+                    if (hc) {
+                        hc.innerHTML = "";
+                        let nivel = s.propiedades[pos].nivel || 0;
+                        if(nivel > 0 && nivel < 5) { for(let i=0; i<nivel; i++) { let h = document.createElement('div'); h.className = 'house'; hc.appendChild(h); } }
+                        else if(nivel === 5) { let h = document.createElement('div'); h.className = 'hotel'; hc.appendChild(h); }
+                    }
                 }
-            }); }
-            if(s.log) { let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); document.getElementById('log').innerHTML = h; }
+            }); 
+        }
 
-            // 1. Verificación automática de la misión "Caja Fuerte" (se ejecuta siempre)
-            if (s.jugadores[miIdx]) {
-                verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
-            }
+        // Actualizar Log
+        if(s.log) { 
+            let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); 
+            document.getElementById('log').innerHTML = h; 
+        }
 
-            // 2. Bloque de Notificaciones (Detecta si CUALQUIER misión acaba de cumplirse)
-            if (s.jugadores[miIdx] && s.jugadores[miIdx].ultimaMision) {
+        // Misiones (Mantenemos tu lógica existente)
+        if (s.jugadores && s.jugadores[miIdx]) {
+            verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
+            if (s.jugadores[miIdx].ultimaMision) {
                 let m = s.jugadores[miIdx].ultimaMision;
-
                 const mensajes = {
                     "negociador": "¡Has ganado $400 por tu primer intercambio!",
                     "inversor": "¡Felicidades! Has ganado $200 por ser un Inversor Inicial.",
@@ -1114,23 +1151,15 @@ function mostrarNotificacionMision(titulo) {
                     "intocable": "¡El Intocable! Otros jugadores han caído 5 veces en tus propiedades. ¡Has ganado $400!",
                     "renovador": "¡Excelente constructor! Has construido 5 casas en total. ¡Has ganado $500!",
                     "monopolioTotal": "¡INCREÍBLE! Has conseguido el Monopolio Total. ¡Premio de $1,500!"
-};
-                
-
+                };
                 if (mensajes[m]) {
                     mostrarNotificacionMision(mensajes[m]);
-                    // Limpiamos el aviso para que no se repita
                     db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
-             }
+                }
+            }
         }
-    }); // Cierra el .on('value')
+    });
 }
-
-        document.getElementById('chat-msg').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        enviarChat();
-    }
-});
      
     window.addEventListener('DOMContentLoaded', () => {
     const board = document.getElementById('board');
