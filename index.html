@@ -223,18 +223,18 @@
     </div> 
 
     <div class="panel">
-        <strong>Opciones de Juego</strong>
-        <button class="btn" id="btn-modo-2v2" onclick="toggleModo2v2()" style="background: #ff80bf; margin-top: 10px;">
-            Activar Modo 2v2 (Solo 4 jugadores)
-        </button>
-    </div> 
+    <strong>Historial</strong><div id="log" style="height: 100px;"></div>
+    <strong>Chat</strong><div id="chat-log" style="height: 100px;"></div>
+    <input type="text" id="chat-msg" class="input-field" placeholder="Mensaje...">
+    <button class="btn" onclick="enviarChat()">Enviar</button>
+</div>
 
-    <div class="panel">
-        <strong>Historial</strong><div id="log"></div>
-        <strong>Chat</strong><div id="chat-log"></div>
-        <input type="text" id="chat-msg" class="input-field" placeholder="Mensaje...">
-        <button class="btn" onclick="enviarChat()">Enviar</button>
-    </div>
+<div class="panel" style="padding: 8px 15px;">
+    <button class="btn" id="btn-modo-2v2" onclick="toggleModo2v2()" 
+            style="background: #ff80bf; padding: 5px; font-size: 11px; margin: 0;">
+        Activar Modo 2v2 (Solo 4 jugadores)
+    </button>
+</div>
 </div>
 </div>
 
