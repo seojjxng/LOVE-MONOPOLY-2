@@ -55,8 +55,36 @@
     top: -30px; /* Para subirlo más (-15px, -20px, etc.) */
 }
 .close:hover { color: #ff59aa; }
-.reputacion-container { width: 100px; height: 10px; background: #ddd; border-radius: 5px; }
-.reputacion-bar { height: 100%; width: 50%; background: #00ff00; border-radius: 5px; transition: width 0.5s; }
+        /* Contenedor de reputación */
+.reputacion-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 15px; /* Espacio para que esté "arriba" de lo demás */
+}
+
+.reputacion-label {
+    font-size: 12px;
+    color: #ff59aa; /* Tu color rosa */
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+.reputacion-container {
+    width: 120px;
+    height: 10px;
+    background: #ffe0f0; /* Rosa muy clarito de fondo */
+    border-radius: 10px;
+    border: 1px solid #ff59aa;
+    overflow: hidden; /* Corta la barra si se sale de las esquinas redondeadas */
+}
+.reputacion-bar {
+    height: 100%;
+    width: 50%; /* Valor inicial (50%) */
+    background: #ff59aa; /* Rosa vibrante para el progreso */
+    transition: width 0.5s ease-in-out; /* Animación suave */
+}
         #modal-misiones { 
     display: none; 
     position: fixed; 
@@ -155,19 +183,19 @@
         <div id="modal-extra"></div>
     </div>
 </div>
-            <div class="reputacion-container">
-    <div id="rep-bar" class="reputacion-bar"></div>
-</div>
+        
             <div class="center-zone">
-                <div id="clima-display" style="font-size: 15px; color: #ff59aa; font-weight: bold;">Clima: -</div>
-                <div id="turno-text" style="font-weight:bold;">ESPERANDO...</div>
-                <div id="dado-valor">0</div>
-                <img src="https://i.imgur.com/Nsafzb4.png" style="width:60px; cursor:pointer" onclick="tirarDado()" alt="Lanzar dado">
-                <div>💖 $<span id="dinero-mio">1000</span></div>
-                <div style="font-size: 15px; margin-top: 5px;">Monto de impuestos actuales: $<span id="monto-impuestos">0</span></div>
-                
-                <button class="btn" onclick="abrirModalMisiones()">Ver Misiones</button>
-            </div>
+    <div class="reputacion-wrapper">
+        <div class="reputacion-label">Reputación</div>
+        <div class="reputacion-container">
+            <div id="rep-bar" class="reputacion-bar"></div>
+        </div>
+    </div>
+
+    <div id="clima-display" style="font-size: 15px; color: #ff59aa; font-weight: bold;">Clima: -</div>
+    <div id="turno-text" style="font-weight:bold;">ESPERANDO...</div>
+    <div id="dado-valor">0</div>
+    </div>
         </div>
 
         <div id="banco-container">
@@ -292,6 +320,17 @@
     function obtenerCarta() { return cartasEvento[Math.floor(Math.random() * cartasEvento.length)]; }
     function cerrarModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('modal-extra').innerHTML = ""; }
     function log(txt) { db.ref('salas/' + sala + '/log').push(txt); }
+
+        function actualizarVisualReputacion(valor) {
+    // Aseguramos que el valor esté entre 0 y 100
+    if (valor < 0) valor = 0;
+    if (valor > 100) valor = 100;
+    
+    let barra = document.getElementById('rep-bar');
+    if (barra) {
+        barra.style.width = valor + "%";
+   }
+}
 
         function calcularAlquiler(precioBase, duenoIdx) {
     let rep = jugadores[duenoIdx].reputacion; // Supongamos que guardas la rep aquí
