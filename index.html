@@ -380,25 +380,34 @@
 }
 
         window.verificarLogros = function(idx) {
-    let jugador = window.jugadores[idx];
-    let rep = jugador.reputacion;
-    let cambios = {}; // Objeto para enviar a Firebase
+    // 1. Seguridad: Verificar que el jugador y sus datos existan antes de procesar
+    if (!window.jugadores || !window.jugadores[idx]) {
+        console.warn("Verificación de logros ignorada: datos del jugador aún no cargados.");
+        return;
+    }
 
-    // Lógica para Magnate de la Reputación (100)
+    let jugador = window.jugadores[idx];
+    let rep = jugador.reputacion || 0;
+    let cambios = {}; 
+
+    // 2. Lógica para Magnate de la Reputación (100)
+    // Se asegura de no añadir el escudo si ya lo tiene (además de la validación !jugador.escudo)
     if (rep >= 100 && !jugador.escudo) {
         cambios.escudo = true;
         alert("¡FELICIDADES! Has alcanzado 100 de reputación. ¡Has ganado un ESCUDO DE LUJO!");
     }
 
-    // Lógica para Hotel en Ruinas (0)
-    if (rep <= 0 && jugador.quiebraTecnica === 0) {
-        cambios.quiebraTecnica = 2; // El jugador no cobra por 2 turnos
+    // 3. Lógica para Hotel en Ruinas (0)
+    // Se asegura de no reiniciar una quiebra técnica existente
+    if (rep <= 0 && (!jugador.quiebraTecnica || jugador.quiebraTecnica === 0)) {
+        cambios.quiebraTecnica = 2; 
         alert("¡ADVERTENCIA! Reputación en 0. Entras en QUIEBRA TÉCNICA por 2 turnos.");
     }
 
-    // Si hubo cambios, los enviamos a Firebase
-    if (Object.keys(cambios).length > 0) {
-        db.ref('salas/' + sala + '/jugadores/' + idx).update(cambios);
+    // 4. Si hubo cambios, enviamos a Firebase con una ruta dinámica segura
+    if (Object.keys(cambios).length > 0 && typeof sala !== 'undefined') {
+        db.ref('salas/' + sala + '/jugadores/' + idx).update(cambios)
+            .catch(error => console.error("Error al actualizar logros:", error));
     }
 };
 
