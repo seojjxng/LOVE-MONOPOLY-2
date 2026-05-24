@@ -797,7 +797,7 @@ window.abrirIntercambio = function() {
         document.getElementById('modal-text').innerText = "¡Estás en la cárcel! Tienes derecho a un abogado.";
         
         document.getElementById('modal-extra').innerHTML = `
-            <button class="btn" onclick="pagarFianza()">Pagar Fianza ($100)</button>
+            <button class="btn" onclick="pagarFianza()">Pagar Fianza ($200)</button>
             <button class="btn" onclick="intentarHackeo()">Hackear Sistema (50/50)</button>
             <button class="btn" onclick="document.getElementById('modal').style.display = 'none'; pasarTurno();">Quedarse</button>
         `;
@@ -890,7 +890,7 @@ window.abrirIntercambio = function() {
 }
 
         function pagarFianza() {
-        db.ref('salas/'+sala+'/jugadores/'+miIdx).update({enCarcel: 0, dinero: firebase.database.ServerValue.increment(-100)});
+        db.ref('salas/'+sala+'/jugadores/'+miIdx).update({enCarcel: 0, dinero: firebase.database.ServerValue.increment(-200)});
         log(nombres[miIdx] + " pagó la fianza.");
         document.getElementById('modal').style.display = 'none';
     }
@@ -1113,9 +1113,9 @@ window.abrirIntercambio = function() {
         
         // --- GESTIÓN DE CÁRCEL ---
         if (s.jugadores[miIdx].enCarcel > 0) {
-            log(nombres[miIdx] + " intenta salir de la cárcel...");
-            // Aquí deberías tener una lógica de "sacar dobles" o pagar fianza
-            // Si no logras salir, pasas turno:
+            log(nombres[miIdx] + " está en la cárcel y no puede moverse.");
+            // Si quieres que el jugador pueda salir sacando un 6, puedes añadirlo aquí.
+            // Por ahora, solo pasa turno tras el log.
             pasarTurno(); 
             return;
         }
@@ -1136,33 +1136,39 @@ window.abrirIntercambio = function() {
         let posActual = Number(s.jugadores[miIdx].pos);
         let nuevaPos = (posActual + dado) % mapa.length;
         
+        // CORRECCIÓN: Aquí es donde detectamos si cruzó la salida
         if (nuevaPos < posActual) { 
-            db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + 200); 
-            log(nombres[miIdx] + " pasó por SALIDA y cobró $200."); 
+            db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => (d || 0) + 100); 
+            log(nombres[miIdx] + " pasó por SALIDA y cobró $100."); 
         }
 
         // 4. Lógica de Penalización o Movimiento
         if (nuevoContador === 3) {
             log("¡ACUSACIÓN DE FRAUDE! " + nombres[miIdx] + " sacó tres 6 seguidos.");
             db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
-                pos: 8, enCarcel: 2, seisSeguidos: 0 
+                pos: 9, // Enviamos a la casilla 9 (Cárcel)
+                enCarcel: 2, 
+                seisSeguidos: 0 
             });
-            pasarTurno(); // Forzamos el paso de turno al ser sancionado
+            pasarTurno(); 
         } else {
             db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ 
-                pos: nuevaPos, seisSeguidos: nuevoContador 
+                pos: nuevaPos, 
+                seisSeguidos: nuevoContador 
             });
 
+            // Si saca 6, repite turno. Si no, pasa al siguiente.
             if (dado === 6) {
                 log("¡Sacaste un 6! Tienes turno extra.");
-                // No pasamos turno, el jugador vuelve a tirar
             } else {
-                pasarTurno(); // Turno normal
+                pasarTurno();
             }
+            
+            // Disparamos la lógica de la casilla (aquí es donde se activa el modal de la cárcel)
             setTimeout(() => manejarCasilla(nuevaPos), 600);
         }
     }); 
-}                           
+}
                                                                                                        
     function pagarPrestamo() { db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => { let j = snap.val(); if (j.tienePrestamo) { if (j.dinero >= j.montoPrestamo) { db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ dinero: firebase.database.ServerValue.increment(-j.montoPrestamo), tienePrestamo: false, montoPrestamo: 0 }); log(nombres[miIdx] + " liquidó su préstamo."); } else { document.getElementById('modal-title').innerText = "Fondos insuficientes"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes suficiente dinero para pagar el préstamo.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } } else { document.getElementById('modal-title').innerText = "Banco"; document.getElementById('modal-text').innerHTML = `<div class="empty-debt">No tienes préstamos pendientes.</div>`; document.getElementById('modal-extra').innerHTML = ""; document.getElementById('modal').style.display = 'block'; } }); }
     function verSaldos() { db.ref('salas/' + sala + '/jugadores').once('value', snap => { let txt = ""; snap.forEach(c => { txt += nombres[parseInt(c.key)] + ": $" + c.val().dinero + "<br>"; }); document.getElementById('modal-title').innerText = "Saldos"; document.getElementById('modal-text').innerHTML = txt; document.getElementById('modal').style.display = 'block'; }); }
