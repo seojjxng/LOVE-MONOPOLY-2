@@ -186,30 +186,25 @@
     </div>
 </div>
             
-           <div class="center-zone">
-    <div class="center-content-box">
-        
-        <div class="center-item">
-            <div class="reputacion-label" style="cursor: pointer;" onclick="abrirInfoReputacion()">Reputación</div>
-            <div class="reputacion-container">
-                <div id="rep-bar" class="reputacion-bar"></div>
-            </div>
+            <div class="center-zone">
+    <div class="reputacion-wrapper">
+        <div class="reputacion-label" style="cursor: pointer;" onclick="abrirInfoReputacion()">
+    Reputación (Click para ver)
+</div>
+        <div class="reputacion-container">
+            <div id="rep-bar" class="reputacion-bar"></div>
         </div>
-
-        <div class="center-item">
+    </div>
             <div id="clima-display" style="font-size: 13px; color: #ff59aa; font-weight: bold;">Clima: -</div>
-            <div id="turno-text" style="font-weight:bold; font-size: 14px;">ESPERANDO...</div>
-            <div id="dado-valor" style="font-size: 20px; font-weight: bold;">0</div>
-            <img src="https://i.imgur.com/Nsafzb4.png" style="width:45px; cursor:pointer" onclick="tirarDado()" alt="Lanzar dado">
+    <div id="turno-text" style="font-weight:bold;">ESPERANDO...</div>
+    <div id="dado-valor">0</div>
+    <img src="https://i.imgur.com/Nsafzb4.png" style="width:60px; cursor:pointer" onclick="tirarDado()" alt="Lanzar dado">
+    <div>💖 $<span id="dinero-mio">1000</span></div>
+    <div style="font-size: 13px; margin-top: 5px;">Monto de impuestos actuales: $<span id="monto-impuestos">0</span></div>
+    
+    <button class="btn" onclick="abrirModalMisiones()">Ver Misiones</button>
+</div>
         </div>
-
-        <div class="center-item">
-            <div style="font-size: 15px;">💖 $<span id="dinero-mio">1000</span></div>
-            <div style="font-size: 11px; color: #ff80bf;">Impuestos: $<span id="monto-impuestos">0</span></div>
-            <button class="btn-small" onclick="abrirModalMisiones()" style="margin-top:5px">Ver Misiones</button>
-        </div>
-
-    </div> </div>
 
     
         <div id="banco-container">
