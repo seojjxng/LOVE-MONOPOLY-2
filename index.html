@@ -186,7 +186,9 @@
 
             <div class="center-zone">
     <div class="reputacion-wrapper">
-        <div class="reputacion-label">Reputación</div>
+        <div class="reputacion-label" style="cursor: pointer;" onclick="abrirInfoReputacion()">
+            Reputación (Click para ver)
+        </div>
         <div class="reputacion-container">
             <div id="rep-bar" class="reputacion-bar"></div>
         </div>
@@ -325,6 +327,28 @@
     function obtenerCarta() { return cartasEvento[Math.floor(Math.random() * cartasEvento.length)]; }
     function cerrarModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('modal-extra').innerHTML = ""; }
     function log(txt) { db.ref('salas/' + sala + '/log').push(txt); }
+
+        window.abrirInfoReputacion = function() {
+    // Usamos el índice del jugador (miIdx) que ya usas en otras funciones
+    let rep = jugadores[miIdx].reputacion || 50; 
+    let estrellas = "";
+    let descripcion = "";
+
+    if (rep >= 90) { estrellas = "★★★★★"; descripcion = "Hotel de Lujo. Tus propiedades son un éxito absoluto. Alquileres +10%."; }
+    else if (rep >= 70) { estrellas = "★★★★☆"; descripcion = "Muy valorado. Los visitantes están encantados."; }
+    else if (rep >= 50) { estrellas = "★★★☆☆"; descripcion = "Estándar. Todo funciona correctamente."; }
+    else if (rep >= 30) { estrellas = "★★☆☆☆"; descripcion = "Necesitas mantenimiento. Los clientes se quejan."; }
+    else { estrellas = "★☆☆☆☆"; descripcion = "Reputación crítica. Se esparcen rumores negativos. Alquileres reducidos."; }
+
+    document.getElementById('modal-title').innerText = "Reseña de Visitantes";
+    document.getElementById('modal-text').innerHTML = `
+        <div style="font-size: 30px; color: gold; margin-bottom: 10px;">${estrellas}</div>
+        <p>${descripcion}</p>
+        <hr>
+        <p style="font-size: 12px; color: #888;">Tu puntaje actual: <b>${rep}/100</b></p>
+    `;
+    document.getElementById('modal').style.display = 'block';
+};
 
         function actualizarVisualReputacion(valor) {
     // Aseguramos que el valor esté entre 0 y 100
