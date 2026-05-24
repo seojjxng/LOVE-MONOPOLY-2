@@ -682,20 +682,17 @@ function mostrarNotificacionMision(titulo) {
         let o = snap.val();
         if (!o) return;
 
-        // Inicia la transacción para el dinero
         db.ref('salas/' + sala + '/jugadores').transaction(j => {
             if (j && j[miIdx] && j[o.de] && j[miIdx].dinero >= o.precio) {
                 j[miIdx].dinero -= o.precio;
                 j[o.de].dinero += o.precio;
                 return j;
             }
-            return; // Si no hay dinero o los datos fallan, aborta
+            return;
         }, (error, committed) => {
             if (error) {
-                console.error("Error en la transacción: ", error);
-                alert("Hubo un problema al procesar el pago.");
+                mostrarAvisoModal("Error", "Hubo un problema al procesar el pago.");
             } else if (committed) {
-                // 1. Misiones
                 verificarMisionInversor(miIdx);
                 verificarMisionColeccionista(miIdx);
                 verificarMisionMonopolioTotal(miIdx);
@@ -706,24 +703,36 @@ function mostrarNotificacionMision(titulo) {
                     verificarMisionCajaFuerte(miIdx, s.val());
                 });
 
-                // 2. Acciones finales
-                db.ref('salas/' + sala + '/propiedades/' + o.prop).update({
-                    owner: miIdx, 
-                    hipotecada: false
-                });
-                
+                db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
                 log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
-                
-                // 3. Borrar oferta y cerrar modal de forma segura
                 db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
                 
                 let modal = document.getElementById('modal');
                 if (modal) modal.style.display = 'none';
             } else {
-                alert("No tienes suficiente dinero para completar esta compra.");
+                // AQUÍ ESTÁ EL AVISO QUE QUERÍAS
+                mostrarAvisoModal("Fondos Insuficientes", "No tienes suficiente dinero para completar esta compra.");
             }
         });
     });
+};
+
+        window.mostrarAvisoModal = function(titulo, mensaje) {
+    let modal = document.getElementById('modal');
+    let modalTitle = document.getElementById('modal-title');
+    let modalText = document.getElementById('modal-text');
+    let modalExtra = document.getElementById('modal-extra');
+
+    if (!modal) return;
+
+    modalTitle.innerText = titulo;
+    modalText.innerHTML = `
+        <div style="padding: 20px; text-align: center;">
+            <p>${mensaje}</p>
+        </div>
+    `;
+    modalExtra.innerHTML = ""; 
+    modal.style.display = 'block';
 };
         
 
