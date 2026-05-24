@@ -606,7 +606,9 @@ function mostrarNotificacionMision(titulo) {
     // 1. Limpieza básica
     document.getElementById('modal-extra').innerHTML = ""; 
     
+    // Usamos 'once' para evitar que se quede escuchando y cause bucles
     db.ref('salas/' + sala).once('value', snap => {
+        if (!snap.exists()) return;
         let data = snap.val();
         let misProps = [];
         
@@ -616,25 +618,24 @@ function mostrarNotificacionMision(titulo) {
             });
         }
         
-        // 2. VALIDACIÓN: Si no tiene propiedades, usamos el formato de aviso estándar (tipo banco)
+        // 2. Validación simple sin causar bucles
         if (misProps.length === 0) {
             document.getElementById('modal-title').innerText = "¡Atención!";
             document.getElementById('modal-text').innerText = "No tienes propiedades disponibles para vender.";
-            document.getElementById('modal-extra').innerHTML = ""; // Sin botones extra, igual que el banco
+            document.getElementById('modal-extra').innerHTML = ""; 
             document.getElementById('modal').style.display = 'block';
-            return; // Salimos de la función aquí
+            return;
         }
         
-        // 3. Si tiene propiedades, mostramos el intercambio normalmente
+        // 3. Renderizado
         document.getElementById('modal-title').innerText = "Revender Propiedad";
-        
-        let html = `<div class="card-property">`;
+        let html = `<div class="card-property" style="text-align: left;">`;
         html += "Selecciona propiedad, precio (mayor a 250) y comprador:<br><br>";
         
         misProps.forEach(pIdx => {
             let p = mapa[pIdx];
-            html += `<b>${p.n}</b>: 
-                     <input type="number" id="precio-${pIdx}" placeholder="251" min="251" max="999" style="width: 60px;"> 
+            html += `<b>${p.n}</b>:<br>
+                     <input type="number" id="precio-${pIdx}" placeholder="251" min="251" max="999" style="width: 80px;"> 
                      <select id="sel-${pIdx}">`;
             
             data.jugadores.forEach((j, i) => { 
@@ -648,7 +649,7 @@ function mostrarNotificacionMision(titulo) {
         document.getElementById('modal-text').innerHTML = html;
         document.getElementById('modal').style.display = 'block';
     });
-}
+};
 
     function proponerVenta(pIdx) {
     let comprador = document.getElementById('sel-' + pIdx).value;
