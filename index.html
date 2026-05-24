@@ -602,61 +602,90 @@ function mostrarNotificacionMision(titulo) {
     });
 }
 
+        window.abrirIntercambio = function() {
+    document.getElementById('modal-extra').innerHTML = ""; 
+    
+    db.ref('salas/' + sala).once('value', snap => {
+        let data = snap.val();
+        let misProps = [];
+        
+        if(data.propiedades) {
+            Object.keys(data.propiedades).forEach(pIdx => {
+                if(data.propiedades[pIdx].owner === miIdx) misProps.push(pIdx);
+            });
+        }
+        
+        document.getElementById('modal-title').innerText = "Revender Propiedad";
+        
+        // Usamos un contenedor que siga el estilo de tus tarjetas
+        let html = `<div class="card-property">`;
+        html += "Selecciona propiedad, precio (mayor a 250) y comprador:<br><br>";
+        
+        if(misProps.length === 0) { 
+            html += "No tienes propiedades."; 
+        } else {
+            misProps.forEach(pIdx => {
+                let p = mapa[pIdx];
+                html += `<b>${p.n}</b>: 
+                         <input type="number" id="precio-${pIdx}" placeholder="251" min="251" max="999" style="width: 60px;"> 
+                         <select id="sel-${pIdx}">`;
+                
+                data.jugadores.forEach((j, i) => { 
+                    if(i !== miIdx) html += `<option value="${i}">${nombres[i]}</option>`; 
+                });
+                
+                html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button><br><br>`;
+            });
+        }
+        html += `</div>`;
+        
+        document.getElementById('modal-text').innerHTML = html;
+        document.getElementById('modal').style.display = 'block';
+    });
+}
+
    window.mostrarAvisoIntercambio = function() {
     let modal = document.getElementById('modal');
     let modalTitle = document.getElementById('modal-title');
     let modalText = document.getElementById('modal-text');
     let modalExtra = document.getElementById('modal-extra');
 
-    // Mismo título que las tarjetas de propiedad
-    modalTitle.innerText = "Tarjeta de Propiedad";
-    
-    // Inyectamos el contenido con la misma estructura CSS que usas en verPropiedad
-    // .card-property y .card-header son las clases que ya tienes en tu CSS
+    modalTitle.innerText = "¡Error!";
     modalText.innerHTML = `
         <div class="card-property">
-            <div class="card-header" style="background: #ad0c0c;">¡Error de Intercambio!</div>
+            <div class="card-header" style="background: #ad0c0c; color: white; padding: 5px;">Alerta</div>
             <div style="padding: 20px; text-align: center;">
-                <p>Para realizar un intercambio, debes insertar un valor <b>mayor a $250</b>.</p>
+                <p>Para realizar un intercambio, debes insertar un valor <b>entre 100 y 999</b>.</p>
             </div>
         </div>
     `;
-
-    // Limpiamos botones para que solo se cierre automáticamente
-    modalExtra.innerHTML = ""; 
     
-    // Mostramos el modal
+    // IMPORTANTE: Esta línea es la que hace que la ventana aparezca físicamente
     modal.style.display = 'block';
-
-    // Cierre automático después de 3 segundos
-    setTimeout(() => {
-        if (modal.style.display === 'block') {
-            modal.style.display = 'none';
-        }
-    }, 3000);
 };
         
-    window.proponerVenta = function(pIdx) {
-    // 1. Obtención segura de elementos
+   window.proponerVenta = function(pIdx) {
     let sel = document.getElementById('sel-' + pIdx);
     let input = document.getElementById('precio-' + pIdx);
     
+    // Verificación de seguridad
     if (!sel || !input) {
-        console.error("Error: No se encontraron los elementos del modal.");
+        console.error("Error: No se encontraron los elementos.");
         return;
     }
 
     let comprador = sel.value;
     let precio = parseInt(input.value);
 
-    // 2. Validación con el diseño CSS del juego
+    // 2. Validación usando el diseño de tarjetas (sin divs anidados)
     if (isNaN(precio) || precio < 100 || precio > 999) {
         document.getElementById('modal-title').innerText = "¡Atención!";
-        document.getElementById('modal-text').innerHTML = `
-            <div class="card-property">
-                <p style="text-align: center; padding: 10px;">Por favor, ingresa un precio válido entre 100 y 999.</p>
-            </div>
-        `;
+        
+        // Asignamos la clase directamente al contenedor que ya existe
+        let modalText = document.getElementById('modal-text');
+        modalText.className = "card-property"; 
+        modalText.innerHTML = '<p style="text-align: center; padding: 10px;">Por favor, ingresa un precio válido entre 100 y 999.</p>';
+        
         document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="abrirIntercambio()">Volver</button>`;
         document.getElementById('modal').style.display = 'block';
         return;
