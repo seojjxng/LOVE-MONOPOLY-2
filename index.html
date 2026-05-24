@@ -174,15 +174,6 @@
             <img src="https://i.imgur.com/fRZJfP8.png" id="p1" class="token" style="display:none" alt="Ficha del jugador Horse">
             <img src="https://i.imgur.com/u2AtssG.png" id="p2" class="token" style="display:none" alt="Ficha del jugador Hat">
             <img src="https://i.imgur.com/ekQp8WL.png" id="p3" class="token" style="display:none" alt="Ficha del jugador Car">
-            <div id="modal" class="modal">
-    <div class="modal-body">
-        <span class="close" onclick="document.getElementById('modal').style.display='none'">&times;</span>
-        
-        <h2 id="modal-title"></h2>
-        <div id="modal-text" class="modal-content-scroll"></div>
-        <div id="modal-extra"></div>
-    </div>
-</div>
 
             <div class="center-zone">
     <div class="reputacion-wrapper">
@@ -383,16 +374,56 @@
    }
 }
 
-        function calcularAlquiler(precioBase, duenoIdx) {
-    let rep = jugadores[duenoIdx].reputacion; // Supongamos que guardas la rep aquí
-    let multiplicador = 1.0; 
+        window.verificarLogros = function(idx) {
+    let jugador = window.jugadores[idx];
+    let rep = jugador.reputacion;
+    let cambios = {}; // Objeto para enviar a Firebase
 
-    if (rep > 80) multiplicador = 1.10;      // Bonus: +10%
-    else if (rep < 30) multiplicador = 0.85; // Rumores: -15%
+    // Lógica para Magnate de la Reputación (100)
+    if (rep >= 100 && !jugador.escudo) {
+        cambios.escudo = true;
+        alert("¡FELICIDADES! Has alcanzado 100 de reputación. ¡Has ganado un ESCUDO DE LUJO!");
+    }
 
-    return Math.floor(precioBase * multiplicador);
+    // Lógica para Hotel en Ruinas (0)
+    if (rep <= 0 && jugador.quiebraTecnica === 0) {
+        cambios.quiebraTecnica = 2; // El jugador no cobra por 2 turnos
+        alert("¡ADVERTENCIA! Reputación en 0. Entras en QUIEBRA TÉCNICA por 2 turnos.");
+    }
+
+    // Si hubo cambios, los enviamos a Firebase
+    if (Object.keys(cambios).length > 0) {
+        db.ref('salas/' + sala + '/jugadores/' + idx).update(cambios);
+    }
+};
+
+        function pagarAlquiler(duenoIdx, inquilinoIdx, precioBase) {
+    
+    // 1. VERIFICACIÓN DE QUIEBRA TÉCNICA (El dueño no puede cobrar)
+    if (window.jugadores[duenoIdx] && window.jugadores[duenoIdx].quiebraTecnica > 0) {
+        alert("El dueño está en Quiebra Técnica y no puede cobrar alquileres en este momento.");
+        return; // El pago se cancela
+    }
+
+    // 2. VERIFICACIÓN DEL ESCUDO DE LUJO (El dueño está protegido)
+    if (window.jugadores[duenoIdx] && window.jugadores[duenoIdx].escudo) {
+        alert("¡El alquiler fue bloqueado por el Escudo de Lujo!");
+        db.ref('salas/' + sala + '/jugadores/' + duenoIdx).update({ escudo: false });
+        return; // ¡Se bloquea el pago!
+    }
+
+    // 3. CÁLCULO CON REPUTACIÓN
+    let monto = calcularAlquiler(precioBase, duenoIdx);
+    
+    // 4. EJECUCIÓN DEL COBRO REAL
+    let dineroInquilino = window.jugadores[inquilinoIdx].dinero - monto;
+    let dineroDueno = window.jugadores[duenoIdx].dinero + monto;
+
+    db.ref('salas/' + sala + '/jugadores/' + inquilinoIdx).update({ dinero: dineroInquilino });
+    db.ref('salas/' + sala + '/jugadores/' + duenoIdx).update({ dinero: dineroDueno });
+
+    alert("Has pagado $" + monto + " de alquiler.");
 }
-
         function gestionarFraude() {
     let extra = document.getElementById('modal-extra');
     document.getElementById('modal-title').innerText = "Corte Penal";
@@ -491,7 +522,11 @@ function procederConUnion(nombreSala) {
             enCarcel: 0,
             nombre: miNombre,
             tienePrestamo: false,
-            montoPrestamo: 0
+            montoPrestamo: 0,
+            // --- NUEVAS PROPIEDADES PARA LOGROS ---
+            escudo: false,
+            quiebraTecnica: 0
+            // --------------------------------------
         }).then(() => {
             // Guardamos sala para reconexión
             localStorage.setItem('monopoly_sala', sala);
@@ -499,12 +534,11 @@ function procederConUnion(nombreSala) {
             // 1. Limpiamos jugador al desconectar
             jugadorRef.onDisconnect().remove();
             
-            // 2. CONFIGURAMOS EL MENSAJE DE ABANDONO SOLO PARA CUANDO OCURRA LA DESCONEXIÓN REAL
-            // Usamos un pequeño delay o simplemente vinculamos el set al onDisconnect
+            // 2. CONFIGURAMOS EL MENSAJE DE ABANDONO
             let chatRef = db.ref('salas/' + sala + '/chat').push();
             chatRef.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
             
-            // 3. ENVIAMOS MENSAJE DE ENTRADA (Solo este)
+            // 3. ENVIAMOS MENSAJE DE ENTRADA
             db.ref('salas/' + sala + '/chat').push({ 
                 n: "Sistema", 
                 m: miNombre + " ha entrado a la sala." 
@@ -524,6 +558,18 @@ function procederConUnion(nombreSala) {
     });
 }
 
+
+        function calcularAlquiler(precioBase, duenoIdx) {
+    // Si no tiene reputación, por defecto es 50
+    let rep = (window.jugadores && window.jugadores[duenoIdx]) ? (window.jugadores[duenoIdx].reputacion || 50) : 50;
+    let multiplicador = 1.0; 
+
+    if (rep >= 90) multiplicador = 1.10;      // Bonus: +10%
+    else if (rep <= 30) multiplicador = 0.85;  // Rumores: -15%
+
+    return Math.floor(precioBase * multiplicador);
+}
+        
 
         function obtenerAlquilerFerrocarril(dueñoIdx, todasLasPropiedades) {
     const indicesTransporte = [8, 24, 26, 27];
@@ -755,6 +801,50 @@ function mostrarNotificacionMision(titulo) {
         document.getElementById('modal').style.display = 'block';
     });
 }
+
+        window.verificarLogros = function(idx) {
+
+    let jugador = window.jugadores[idx];
+
+    let rep = jugador.reputacion;
+
+    let cambios = {}; // Objeto para enviar a Firebase
+
+
+
+    // Lógica para Magnate de la Reputación (100)
+
+    if (rep >= 100 && !jugador.escudo) {
+
+        cambios.escudo = true;
+
+        alert("¡FELICIDADES! Has alcanzado 100 de reputación. ¡Has ganado un ESCUDO DE LUJO!");
+
+    }
+
+
+
+    // Lógica para Hotel en Ruinas (0)
+
+    if (rep <= 0 && jugador.quiebraTecnica === 0) {
+
+        cambios.quiebraTecnica = 2; // El jugador no cobra por 2 turnos
+
+        alert("¡ADVERTENCIA! Reputación en 0. Entras en QUIEBRA TÉCNICA por 2 turnos.");
+
+    }
+
+
+
+    // Si hubo cambios, los enviamos a Firebase
+
+    if (Object.keys(cambios).length > 0) {
+
+        db.ref('salas/' + sala + '/jugadores/' + idx).update(cambios);
+
+    }
+
+};
 
         function pedirPrestamo(monto) {
     db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
