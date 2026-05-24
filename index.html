@@ -160,6 +160,19 @@
     cursor: pointer;
     font-size: 11px;
 }
+        .center-content-box {
+    display: flex !important; /* !important fuerza que se aplique */
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 90% !important;
+    background: #ffffff !important; /* Fondo blanco */
+    padding: 20px !important;
+    border-radius: 15px !important;
+    border: 2px solid #ffccd5 !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
+    z-index: 1; /* Asegura que esté por encima del tablero */
+}
         
         .sidebar { width: 320px; display: flex; flex-direction: column; gap: 20px; }
         .panel { background: #fff0f9; padding: 20px; border-radius: 20px; border: 2px solid #ffccd5; }
