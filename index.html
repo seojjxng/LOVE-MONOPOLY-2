@@ -729,43 +729,53 @@ function mostrarNotificacionMision(titulo) {
 };
 
         window.confirmarCompra = function(ofertaKey) {
-    // 1. Obtenemos los datos de la oferta desde Firebase
+    // 1. Obtenemos los datos de la oferta primero
     db.ref('salas/' + sala + '/ofertas/' + ofertaKey).once('value', snap => {
         let o = snap.val();
-        if (!o) return;
+        if (!o) {
+            log("Error: La oferta ya no existe.");
+            return;
+        }
 
-        // 2. Realizamos la transacción de dinero y propiedad
+        // 2. Realizamos la transacción
         db.ref('salas/' + sala).transaction(data => {
-            if (!data.jugadores[o.para] || !data.jugadores[o.de]) return;
-            
-            let comprador = data.jugadores[o.para];
-            let vendedor = data.jugadores[o.de];
+            if (!data) return; // Si la sala no existe, salimos
+
+            // Validar que el comprador y vendedor existan en el array
+            if (!data.jugadores || !data.jugadores[o.para] || !data.jugadores[o.de]) {
+                console.error("Jugadores no encontrados en la transacción");
+                return; 
+            }
 
             // Validar dinero
-            if (comprador.dinero < o.precio) {
-                alert("Dinero insuficiente.");
+            if (Number(data.jugadores[o.para].dinero) < Number(o.precio)) {
+                // No podemos hacer alert() dentro de una transacción porque se ejecuta en servidor/cliente
+                // Usaremos un log para depurar
+                console.warn("Dinero insuficiente");
                 return;
             }
 
             // Transferir dinero
-            data.jugadores[o.para].dinero -= o.precio;
-            data.jugadores[o.de].dinero += o.precio;
+            data.jugadores[o.para].dinero = Number(data.jugadores[o.para].dinero) - Number(o.precio);
+            data.jugadores[o.de].dinero = Number(data.jugadores[o.de].dinero) + Number(o.precio);
 
-            // Transferir propiedad
+            // Transferir propiedad (Asegurando que el objeto exista)
             if (!data.propiedades) data.propiedades = {};
-            data.propiedades[o.prop] = { owner: o.para };
+            data.propiedades[o.prop] = { owner: parseInt(o.para) };
 
-            return data;
-        }).then(() => {
-            log("¡Transacción exitosa! " + nombres[o.para] + " compró la propiedad.");
-            db.ref('salas/' + sala + '/ofertas/' + ofertaKey).remove();
-            document.getElementById('modal').style.display = 'none';
-        }).catch(err => {
-            console.error("Error en la transacción:", err);
+            return data; // Firebase guarda este nuevo estado
+        }, (error, committed, snapshot) => {
+            if (error) {
+                console.error("Error en transacción:", error);
+            } else if (committed) {
+                log("¡Venta completada!");
+                // Borramos la oferta
+                db.ref('salas/' + sala + '/ofertas/' + ofertaKey).remove();
+                document.getElementById('modal').style.display = 'none';
+            }
         });
     });
 };
-
 window.abrirIntercambio = function() {
     db.ref('salas/' + sala).once('value', snap => {
         if (!snap.exists()) return;
