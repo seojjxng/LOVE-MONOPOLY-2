@@ -220,18 +220,16 @@
         <strong>Unirse a Sala</strong>
         <input type="text" id="sala-id" class="input-field" placeholder="Nombre de la sala">
         <button class="btn" id="btn-unirse" onclick="unirse()">Entrar a la sala</button>
-    </div> 
+    </div>
 
     <div class="panel">
-    <strong>Historial</strong><div id="log" style="height: 100px;"></div>
-    <strong>Chat</strong><div id="chat-log" style="height: 100px;"></div>
-    <input type="text" id="chat-msg" class="input-field" placeholder="Mensaje...">
-    <button class="btn" onclick="enviarChat()">Enviar</button>
-</div>
+        <strong>Historial</strong><div id="log"></div>
+        <strong>Chat</strong><div id="chat-log"></div>
+        <input type="text" id="chat-msg" class="input-field" placeholder="Mensaje...">
+        <button class="btn" onclick="enviarChat()">Enviar</button>
+    </div>
 
-<div class="panel" style="padding: 8px 15px;">
-    <button class="btn" id="btn-modo-2v2" onclick="toggleModo2v2()" 
-            style="background: #ff80bf; padding: 5px; font-size: 11px; margin: 0;">
+    <button class="btn" id="btn-modo-2v2" onclick="toggleModo2v2()" style="background: #ff80bf; margin-top: 10px;">
         Activar Modo 2v2 (Solo 4 jugadores)
     </button>
 </div>
