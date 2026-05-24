@@ -220,17 +220,22 @@
         <strong>Unirse a Sala</strong>
         <input type="text" id="sala-id" class="input-field" placeholder="Nombre de la sala">
         <button class="btn" id="btn-unirse" onclick="unirse()">Entrar a la sala</button>
-    </div> <div class="panel">
+    </div> 
+
+    <div class="panel">
         <strong>Opciones de Juego</strong>
         <button class="btn" id="btn-modo-2v2" onclick="toggleModo2v2()" style="background: #ff80bf; margin-top: 10px;">
             Activar Modo 2v2 (Solo 4 jugadores)
         </button>
-    </div> <div class="panel">
+    </div> 
+
+    <div class="panel">
         <strong>Historial</strong><div id="log"></div>
         <strong>Chat</strong><div id="chat-log"></div>
         <input type="text" id="chat-msg" class="input-field" placeholder="Mensaje...">
         <button class="btn" onclick="enviarChat()">Enviar</button>
     </div>
+</div>
 </div>
 
 <div id="modal-misiones" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: #ffe4e9; padding: 20px; border: 3px solid #ff80bf; border-radius: 15px; text-align: center; z-index: 1000;"> 
