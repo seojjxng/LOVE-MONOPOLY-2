@@ -28,6 +28,15 @@
     position: relative; 
     margin: 0 auto; /* Esto centrará el tablero si el padre es más ancho */
 }
+        .center-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* ESTO CENTRA TODO HORIZONTALMENTE */
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 10px;
+    text-align: center; /* Asegura que el texto dentro sea centrado */
+}
         .cell { background: white; border: 2px solid #ffccd5; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; color: #c71585; text-align: center; position: relative; cursor: pointer; }
         
         .strip { width: 100%; height: 10px; position: absolute; top: 0; border-top-left-radius: 8px; border-top-right-radius: 8px; }
@@ -223,11 +232,11 @@
         </div>
 
         <div class="center-item">
-            <div id="clima-display" style="font-size: 13px; color: #ff59aa; font-weight: bold;">Clima: -</div>
-            <div id="turno-text" style="font-weight:bold; font-size: 14px;">ESPERANDO...</div>
-            <div id="dado-valor" style="font-size: 20px; font-weight: bold;">0</div>
-            <img src="https://i.imgur.com/Nsafzb4.png" style="width:45px; cursor:pointer" onclick="tirarDado()" alt="Lanzar dado">
-        </div>
+    <div id="clima-display" style="font-size: 13px; color: #ff59aa; font-weight: bold;">Clima: -</div>
+    <div id="turno-text" style="font-weight:bold; font-size: 14px;">ESPERANDO...</div>
+    <div id="dado-valor" style="font-size: 20px; font-weight: bold;">0</div>
+    <img src="https://i.imgur.com/Nsafzb4.png" style="width:45px; cursor:pointer" onclick="tirarDado()" alt="Lanzar dado">
+</div>
 
         <div class="center-item">
             <div style="font-size: 15px;">💖 $<span id="dinero-mio">1000</span></div>
