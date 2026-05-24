@@ -342,24 +342,21 @@ function procederConUnion(nombreSala) {
             tienePrestamo: false,
             montoPrestamo: 0
         }).then(() => {
-            // Guardamos para reconexión automática
+            // Guardamos sala para reconexión
             localStorage.setItem('monopoly_sala', sala);
             
-            // ELIMINAMOS el push del mensaje de abandono al entrar
-            // Solo configuramos el onDisconnect para que Firebase lo haga si te vas
+            // 1. Limpiamos jugador al desconectar
             jugadorRef.onDisconnect().remove();
             
-            // Configuramos el mensaje de abandono únicamente para cuando Firebase detecte desconexión
+            // 2. CONFIGURAMOS EL MENSAJE DE ABANDONO SOLO PARA CUANDO OCURRA LA DESCONEXIÓN REAL
+            // Usamos un pequeño delay o simplemente vinculamos el set al onDisconnect
+            let chatRef = db.ref('salas/' + sala + '/chat').push();
+            chatRef.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
+            
+            // 3. ENVIAMOS MENSAJE DE ENTRADA (Solo este)
             db.ref('salas/' + sala + '/chat').push({ 
                 n: "Sistema", 
                 m: miNombre + " ha entrado a la sala." 
-            });
-
-            // Esto asegura que el mensaje de abandono solo se cree si cierras el navegador/refrescas
-            // Usamos un nodo separado o simplemente dejamos que el remove() del jugador dispare el aviso
-            // (Si tienes una lógica de log de abandono, lo mejor es dejarlo en el onDisconnect)
-            db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: miNombre + " ha abandonado." }).then(ref => {
-                 ref.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
             });
 
             if (miIdx === 0) {
