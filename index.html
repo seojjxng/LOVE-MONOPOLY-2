@@ -183,7 +183,7 @@
         <div id="modal-extra"></div>
     </div>
 </div>
-        
+
             <div class="center-zone">
     <div class="reputacion-wrapper">
         <div class="reputacion-label">Reputación</div>
@@ -191,13 +191,18 @@
             <div id="rep-bar" class="reputacion-bar"></div>
         </div>
     </div>
-
-    <div id="clima-display" style="font-size: 15px; color: #ff59aa; font-weight: bold;">Clima: -</div>
+            <div id="clima-display" style="font-size: 15px; color: #ff59aa; font-weight: bold;">Clima: -</div>
     <div id="turno-text" style="font-weight:bold;">ESPERANDO...</div>
     <div id="dado-valor">0</div>
-    </div>
+    <img src="https://i.imgur.com/Nsafzb4.png" style="width:60px; cursor:pointer" onclick="tirarDado()" alt="Lanzar dado">
+    <div>💖 $<span id="dinero-mio">1000</span></div>
+    <div style="font-size: 15px; margin-top: 5px;">Monto de impuestos actuales: $<span id="monto-impuestos">0</span></div>
+    
+    <button class="btn" onclick="abrirModalMisiones()">Ver Misiones</button>
+</div>
         </div>
 
+    
         <div id="banco-container">
             <button class="btn" style="width: 140px" onclick="abrirBanco()">🏦 Banco</button>
             <button class="btn" style="width: 140px" onclick="pagarPrestamo()">💳 Pagar Préstamo</button>
