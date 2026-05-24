@@ -370,14 +370,6 @@ function procederConUnion(nombreSala) {
     });
 }
 
-// 4. BLOQUE DE RECONEXIÓN AUTOMÁTICA (Pon esto al final de tu archivo)
-window.addEventListener('load', () => {
-    let salaGuardada = localStorage.getItem('monopoly_sala');
-    if (salaGuardada && !yaEntro) {
-        console.log("Recuperando sesión en sala:", salaGuardada);
-        procederConUnion(salaGuardada);
-    }
-});
 
         function obtenerAlquilerFerrocarril(dueñoIdx, todasLasPropiedades) {
     const indicesTransporte = [8, 24, 26, 27];
