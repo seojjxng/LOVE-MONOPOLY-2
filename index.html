@@ -782,7 +782,32 @@ window.abrirIntercambio = function() {
     function liberar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: false}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d - Math.floor(mapa[pos].p*0.6)); log(nombres[miIdx] + " liberó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
     function intentarEvasion(d, a, m) { let exito = Math.random() < 0.30; if(exito) { let montoFinal = Math.floor(m / 2); procesarPago(d, a, montoFinal, true); log(nombres[d] + " evadió el alquiler exitosamente. Pagará $" + montoFinal); } else { let montoFinal = m + 50; procesarPago(d, a, montoFinal, false); log(nombres[d] + " falló su evasión de pago. Paga $" + montoFinal); } }
 
-    function manejarCasilla(pos) {
+   function manejarCasilla(pos) {
+    // NUEVA VALIDACIÓN: BLOQUEO EN CÁRCEL
+    if (pos === 9) {
+        log(nombres[miIdx] + " ha caído en la CÁRCEL.");
+        
+        // Primero actualizamos Firebase
+        db.ref('salas/' + sala + '/jugadores/' + miIdx).update({
+            enCarcel: 2 
+        });
+
+        // Ahora configuramos el modal
+        document.getElementById('modal-title').innerText = "Cárcel";
+        document.getElementById('modal-text').innerText = "¡Estás en la cárcel! Tienes derecho a un abogado.";
+        
+        document.getElementById('modal-extra').innerHTML = `
+            <button class="btn" onclick="pagarFianza()">Pagar Fianza ($100)</button>
+            <button class="btn" onclick="intentarHackeo()">Hackear Sistema (50/50)</button>
+            <button class="btn" onclick="document.getElementById('modal').style.display = 'none'; pasarTurno();">Quedarse</button>
+        `;
+        
+        document.getElementById('modal').style.display = 'block';
+        turnosSeis = 0;
+        
+        return; // Detiene la ejecución aquí
+    }
+
     let p = mapa[pos];
     
     // CASO EVENTOS
@@ -845,6 +870,25 @@ window.abrirIntercambio = function() {
     verPropiedad(pos, true);
 }
 
+
+        function intentarHackeo() {
+    let exito = Math.random() < 0.5;
+    if (exito) {
+        log(nombres[miIdx] + " ¡HACKEO EXITOSO! Has escapado sin perder tu turno.");
+        db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ enCarcel: 0 });
+        document.getElementById('modal').style.display = 'none';
+    } else {
+        log(nombres[miIdx] + " ¡FALLASTE! El sistema ha detectado el hackeo, +1 turno de condena.");
+        db.ref('salas/' + sala + '/jugadores/' + miIdx).once('value', snap => {
+            let j = snap.val();
+            let nuevaCondena = (j.enCarcel || 0) + 1;
+            db.ref('salas/' + sala + '/jugadores/' + miIdx).update({ enCarcel: nuevaCondena });
+        });
+        document.getElementById('modal').style.display = 'none';
+        pasarTurno();
+    }
+}
+
         function pagarFianza() {
         db.ref('salas/'+sala+'/jugadores/'+miIdx).update({enCarcel: 0, dinero: firebase.database.ServerValue.increment(-100)});
         log(nombres[miIdx] + " pagó la fianza.");
@@ -852,9 +896,10 @@ window.abrirIntercambio = function() {
     }
 
     function quedarseEnCarcel() {
-        log(nombres[miIdx] + " cumplirá su condena en la cárcel.");
-        document.getElementById('modal').style.display = 'none';
-    }
+    log(nombres[miIdx] + " cumplirá su condena en la cárcel.");
+    document.getElementById('modal').style.display = 'none';
+    pasarTurno(); // ¡MUY IMPORTANTE!: Si se queda, debe ceder el turno
+}
 
     window.pasarTurno = function() {
     turnosSeis = 0;
