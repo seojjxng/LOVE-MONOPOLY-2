@@ -305,10 +305,14 @@ window.unirse = function() {
         } else {
             // La sala existe: Entramos directamente
             procederConUnion(nombreSala);
+            
+            // ACTIVACIÓN DE OFERTAS: Al entrar, empezamos a escuchar si alguien nos vende algo
+            if (typeof escucharOfertas === 'function') {
+                escucharOfertas();
+            }
         }
     });
 };
-
 // 2. Función auxiliar para crear y entrar
 window.crearNuevaSala = function(nombreSala) {
     db.ref('salas/' + nombreSala).set({
