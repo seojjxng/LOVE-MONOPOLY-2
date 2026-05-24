@@ -205,8 +205,15 @@
     {n:"MOTO",p:600},{n:"PARADA",p:0},{n:"AVIÓN",p:600},{n:"TREN",p:600}
 ];
 
-        function obtenerGrupo(pos) { 
-    return grupos.find(g => g.indices.includes(pos)); 
+        function obtenerGrupo(pos) {
+    // 1. Verificamos que 'grupos' exista y sea un array
+    if (typeof grupos === 'undefined' || !Array.isArray(grupos)) {
+        return null;
+    }
+
+    // 2. Buscamos el grupo de forma segura
+    // Usamos ?. (encadenamiento opcional) para evitar errores si 'indices' falta
+    return grupos.find(g => g.indices && g.indices.includes(pos)) || null;
 }
 
     // Variables de clima ampliadas
