@@ -618,16 +618,21 @@ function mostrarNotificacionMision(titulo) {
             });
         }
         
-        // 2. Validación simple sin causar bucles
+        // 2. Validación: Ahora usamos el mismo contenedor 'card-property'
         if (misProps.length === 0) {
             document.getElementById('modal-title').innerText = "¡Atención!";
-            document.getElementById('modal-text').innerText = "No tienes propiedades disponibles para vender.";
+            // AQUÍ ESTÁ EL CAMBIO: Usamos innerHTML con la clase CSS que ya existe
+            document.getElementById('modal-text').innerHTML = `
+                <div class="card-property">
+                    <p style="text-align: center; padding: 15px;">No tienes propiedades disponibles para vender.</p>
+                </div>
+            `;
             document.getElementById('modal-extra').innerHTML = ""; 
             document.getElementById('modal').style.display = 'block';
             return;
         }
         
-        // 3. Renderizado
+        // 3. Renderizado de las propiedades
         document.getElementById('modal-title').innerText = "Revender Propiedad";
         let html = `<div class="card-property" style="text-align: left;">`;
         html += "Selecciona propiedad, precio (mayor a 250) y comprador:<br><br>";
