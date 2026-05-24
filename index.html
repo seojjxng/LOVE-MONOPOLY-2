@@ -637,36 +637,44 @@ function mostrarNotificacionMision(titulo) {
 };
         
     window.proponerVenta = function(pIdx) {
-    let comprador = document.getElementById('sel-' + pIdx).value;
-    let precioInput = document.getElementById('precio-' + pIdx).value;
-    let precio = parseInt(precioInput);
+    // 1. Obtención segura de elementos
+    let sel = document.getElementById('sel-' + pIdx);
+    let input = document.getElementById('precio-' + pIdx);
+    
+    if (!sel || !input) {
+        console.error("Error: No se encontraron los elementos del modal.");
+        return;
+    }
 
-    // VALIDACIÓN: Usamos el diseño CSS del juego en lugar de alert()
-    if (!precio || precio < 100 || precio > 999) {
+    let comprador = sel.value;
+    let precio = parseInt(input.value);
+
+    // 2. Validación con el diseño CSS del juego
+    if (isNaN(precio) || precio < 100 || precio > 999) {
         document.getElementById('modal-title').innerText = "¡Atención!";
         document.getElementById('modal-text').innerHTML = `
             <div class="card-property">
-                <p style="text-align: center;">Por favor, ingresa un precio válido entre 100 y 999.</p>
+                <p style="text-align: center; padding: 10px;">Por favor, ingresa un precio válido entre 100 y 999.</p>
             </div>
         `;
-        // Limpiamos extra para que no haya botones que no deben estar
-        document.getElementById('modal-extra').innerHTML = "";
+        document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="abrirIntercambio()">Volver</button>`;
         document.getElementById('modal').style.display = 'block';
         return;
     }
 
-    // Lógica original intacta
+    // 3. Lógica original intacta
     db.ref('salas/' + sala + '/ofertas').push({
         prop: pIdx, 
         de: miIdx, 
-        para: comprador, 
+        para: parseInt(comprador), 
         precio: precio
     });
 
     log(nombres[miIdx] + " propuso vender " + mapa[pIdx].n + " a " + nombres[comprador] + " por $" + precio);
+    
+    // Cerramos el modal solo después de enviar
     document.getElementById('modal').style.display = 'none';
 };
-
         
 
     function hipotecar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: true}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + Math.floor(mapa[pos].p/2)); log(nombres[miIdx] + " hipotecó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
