@@ -1622,19 +1622,22 @@ window.iniciarJuegoConfirmado = function() {
 };
 
 
-// --- INICIALIZACIÓN DEL SISTEMA ---
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. Renderizado inicial del tablero
+    console.log("DOM cargado. Iniciando tablero...");
+    
+    // 1. Renderizar tablero si la función existe
     if (typeof renderizarTablero === 'function') {
         renderizarTablero();
+    } else {
+        console.error("Error: La función renderizarTablero no está definida.");
     }
 
-    // 2. Auto-unión si ya existe una sala en sesión
+    // 2. Auto-unión si hay sala guardada
     if (sessionStorage.getItem('salaActual')) {
         window.unirse();
     }
-
-    // 3. Listener ÚNICO para el chat (evita duplicidades)
+    
+    // 3. Listener ÚNICO para el chat
     const chatInput = document.getElementById('chat-msg');
     if (chatInput) {
         chatInput.addEventListener('keypress', (e) => {
