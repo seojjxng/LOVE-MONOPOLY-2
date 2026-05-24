@@ -775,23 +775,52 @@ window.confirmarCompra = function(ofertaKey) {
     });
 };
 
-       window.escucharOfertas = function() {
+       window.confirmarCompra = function(ofertaKey) {
+    if (!sala) return;
+    
+    db.ref('salas/' + sala + '/ofertas/' + ofertaKey).once('value', snap => {
+        let o = snap.val();
+        if (!o) return;
+
+        db.ref('salas/' + sala).transaction(data => {
+            if (!data || !data.jugadores[o.para]) return;
+            let precio = Number(o.precio);
+            if (Number(data.jugadores[o.para].dinero) < precio) return;
+
+            data.jugadores[o.para].dinero -= precio;
+            data.jugadores[o.de].dinero += precio;
+            
+            if (!data.propiedades) data.propiedades = {};
+            data.propiedades[o.prop] = { owner: parseInt(o.para) };
+            return data;
+        }, (error, committed) => {
+            if (committed) {
+                db.ref('salas/' + sala + '/ofertas/' + ofertaKey).remove();
+                document.getElementById('modal').style.display = 'none';
+                log("¡Venta completada!");
+            }
+        });
+    });
+};
+
+// Función corregida para mostrar la oferta
+window.escucharOfertas = function() {
+    if (!sala) return;
+    
+    // IMPORTANTE: .off() evita duplicar escuchadores si se llama varias veces
+    db.ref('salas/' + sala + '/ofertas').off('child_added'); 
+    
     db.ref('salas/' + sala + '/ofertas').on('child_added', snap => {
         let o = snap.val();
-        let key = snap.key;
-        
-        // Solo mostramos el modal si la oferta es para mí
-        if(o && o.para === miIdx) {
-            document.getElementById('modal-title').innerText = "¡Oferta de compra!";
-            document.getElementById('modal-text').innerHTML = `
-                <div class="card-property">
-                    <p>${nombres[o.de]} quiere venderte <b>${mapa[o.prop].n}</b> por <b>$${o.precio}</b>.</p>
-                </div>
-            `;
-            document.getElementById('modal-extra').innerHTML = `
-                <button class="btn" onclick="confirmarCompra('${key}')">Aceptar Compra</button>
-                <button class="btn" style="background:#555" onclick="cerrarModal()">Rechazar</button>
-            `;
+        if (o && o.para === miIdx) {
+            document.getElementById('modal-title').innerText = "¡Oferta de Venta!";
+            document.getElementById('modal-text').innerHTML = 
+                `<p>${nombres[o.de] || 'Alguien'} te vende una propiedad por $${o.precio}</p>`;
+            
+            document.getElementById('modal-extra').innerHTML = 
+                `<button class="btn" onclick="confirmarCompra('${snap.key}')">Aceptar</button>
+                 <button class="btn" onclick="document.getElementById('modal').style.display='none'">Cancelar</button>`;
+            
             document.getElementById('modal').style.display = 'block';
         }
     });
