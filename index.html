@@ -603,10 +603,13 @@ function mostrarNotificacionMision(titulo) {
 }
 
    window.abrirIntercambio = function() {
-    // 1. Limpieza básica
+    // 1. Limpieza total
     document.getElementById('modal-extra').innerHTML = ""; 
+    let modalText = document.getElementById('modal-text');
     
-    // Usamos 'once' para evitar que se quede escuchando y cause bucles
+    // Asignamos la clase CSS directamente al contenedor, igual que tus otras ventanas
+    modalText.className = "card-property"; 
+    
     db.ref('salas/' + sala).once('value', snap => {
         if (!snap.exists()) return;
         let data = snap.val();
@@ -618,24 +621,17 @@ function mostrarNotificacionMision(titulo) {
             });
         }
         
-        // 2. Validación: Ahora usamos el mismo contenedor 'card-property'
+        // 2. Validación usando el método estándar
         if (misProps.length === 0) {
             document.getElementById('modal-title').innerText = "¡Atención!";
-            // AQUÍ ESTÁ EL CAMBIO: Usamos innerHTML con la clase CSS que ya existe
-            document.getElementById('modal-text').innerHTML = `
-                <div class="card-property">
-                    <p style="text-align: center; padding: 15px;">No tienes propiedades disponibles para vender.</p>
-                </div>
-            `;
-            document.getElementById('modal-extra').innerHTML = ""; 
+            modalText.innerText = "No tienes propiedades disponibles para vender.";
             document.getElementById('modal').style.display = 'block';
             return;
         }
         
-        // 3. Renderizado de las propiedades
+        // 3. Renderizado si hay propiedades
         document.getElementById('modal-title').innerText = "Revender Propiedad";
-        let html = `<div class="card-property" style="text-align: left;">`;
-        html += "Selecciona propiedad, precio (mayor a 250) y comprador:<br><br>";
+        let html = "Selecciona propiedad, precio (mayor a 250) y comprador:<br><br>";
         
         misProps.forEach(pIdx => {
             let p = mapa[pIdx];
@@ -650,12 +646,10 @@ function mostrarNotificacionMision(titulo) {
             html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button><br><br>`;
         });
         
-        html += `</div>`;
-        document.getElementById('modal-text').innerHTML = html;
+        modalText.innerHTML = html;
         document.getElementById('modal').style.display = 'block';
     });
 };
-
     function proponerVenta(pIdx) {
     let comprador = document.getElementById('sel-' + pIdx).value;
     let precioInput = document.getElementById('precio-' + pIdx).value;
