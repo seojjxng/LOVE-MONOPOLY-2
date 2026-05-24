@@ -647,17 +647,26 @@ function mostrarNotificacionMision(titulo) {
     });
 };
         
-    function proponerVenta(pIdx) {
+    window.proponerVenta = function(pIdx) {
     let comprador = document.getElementById('sel-' + pIdx).value;
     let precioInput = document.getElementById('precio-' + pIdx).value;
     let precio = parseInt(precioInput);
 
-    // Validación: que el precio esté entre 100 y 999
+    // VALIDACIÓN: Usamos el diseño CSS del juego en lugar de alert()
     if (!precio || precio < 100 || precio > 999) {
-        alert("Por favor, ingresa un precio válido entre 100 y 999.");
+        document.getElementById('modal-title').innerText = "¡Atención!";
+        document.getElementById('modal-text').innerHTML = `
+            <div class="card-property">
+                <p style="text-align: center;">Por favor, ingresa un precio válido entre 100 y 999.</p>
+            </div>
+        `;
+        // Limpiamos extra para que no haya botones que no deben estar
+        document.getElementById('modal-extra').innerHTML = "";
+        document.getElementById('modal').style.display = 'block';
         return;
     }
 
+    // Lógica original intacta
     db.ref('salas/' + sala + '/ofertas').push({
         prop: pIdx, 
         de: miIdx, 
@@ -667,68 +676,6 @@ function mostrarNotificacionMision(titulo) {
 
     log(nombres[miIdx] + " propuso vender " + mapa[pIdx].n + " a " + nombres[comprador] + " por $" + precio);
     document.getElementById('modal').style.display = 'none';
-}
-
-    window.escucharOfertas = function() {
-    db.ref('salas/' + sala + '/ofertas').on('child_added', snap => {
-        let o = snap.val();
-        if(o.para == miIdx) {
-            document.getElementById('modal-title').innerText = "¡Oferta de compra!";
-            // Usamos tu estilo consistente de tarjeta
-            document.getElementById('modal-text').innerHTML = `
-                <div class="card-property">
-                    <p style="text-align: center;">${nombres[o.de]} quiere venderte <b>${mapa[o.prop].n}</b> por <b>$${o.precio}</b></p>
-                </div>
-            `;
-            document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="confirmarCompra('${snap.key}')">Aceptar</button>`;
-            document.getElementById('modal').style.display = 'block';
-        }
-    });
-}
-
-    window.confirmarCompra = function(oKey) {
-    db.ref('salas/' + sala + '/ofertas/' + oKey).once('value', snap => {
-        let o = snap.val();
-        if (!o) return;
-
-        db.ref('salas/' + sala + '/jugadores').transaction(j => {
-            if (j && j[miIdx] && j[o.de] && j[miIdx].dinero >= o.precio) {
-                j[miIdx].dinero -= o.precio;
-                j[o.de].dinero += o.precio;
-                return j;
-            }
-            return;
-        }, (error, committed) => {
-            if (error) {
-                console.error("Error en la transacción: ", error);
-            } else if (committed) {
-                // 1. Ejecución de Misiones
-                verificarMisionInversor(miIdx);
-                verificarMisionColeccionista(miIdx);
-                verificarMisionMonopolioTotal(miIdx);
-                verificarMisionRenovador(miIdx);
-                verificarMisionNegociador(o.de);
-
-                db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').once('value', s => {
-                    verificarMisionCajaFuerte(miIdx, s.val());
-                });
-
-                // 2. Acciones finales: Actualizar propiedad, Log y Borrar oferta
-                db.ref('salas/' + sala + '/propiedades/' + o.prop).update({
-                    owner: miIdx, 
-                    hipotecada: false
-                });
-                
-                log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
-                db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
-                
-                // 3. Cierre del modal
-                let modal = document.getElementById('modal');
-                if (modal) modal.style.display = 'none';
-            }
-            // Si 'committed' es falso (sin fondos), simplemente no hace nada
-        });
-    });
 };
 
         
