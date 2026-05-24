@@ -725,13 +725,21 @@ function mostrarNotificacionMision(titulo) {
 
     if (!modal) return;
 
+    // Asignamos el título
     modalTitle.innerText = titulo;
+
+    // Usamos un contenedor con un estilo limpio que hereda del CSS existente
+    // Se ve bien porque usa el mismo formato que los avisos del juego
     modalText.innerHTML = `
-        <div style="padding: 20px; text-align: center;">
-            <p>${mensaje}</p>
+        <div style="padding: 25px; text-align: center; font-size: 16px;">
+            <p style="margin: 0; line-height: 1.5;">${mensaje}</p>
         </div>
     `;
+
+    // Limpiamos los botones para que el modal se vea como un aviso informativo
     modalExtra.innerHTML = ""; 
+    
+    // Mostramos el modal
     modal.style.display = 'block';
 };
         
