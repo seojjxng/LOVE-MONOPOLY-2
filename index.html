@@ -785,19 +785,6 @@ window.abrirIntercambio = function() {
     function manejarCasilla(pos) {
     let p = mapa[pos];
     
-    // CASO CÁRCEL
-    if (p.n === "A LA CÁRCEL" || p.n === "CÁRCEL") {
-        db.ref('salas/'+sala+'/jugadores/'+miIdx).update({pos: 8, enCarcel: 2});
-        log(nombres[miIdx] + " fue enviado a la cárcel.");
-        document.getElementById('modal-title').innerText = "Cárcel";
-        document.getElementById('modal-text').innerText = "¡ALTO AHÍ! Estás bajo arresto.";
-        document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="pagarFianza()">Pagar Fianza ($100)</button><button class="btn" onclick="quedarseEnCarcel()">Quedarse</button>`;
-        document.getElementById('modal').style.display = 'block';
-        turnosSeis = 0;
-        pasarTurno();
-        return;
-    }
-    
     // CASO EVENTOS
     if (p.n === "?" || p.n === "ARCA COMUNAL") { 
         ejecutarEvento(p.n); 
