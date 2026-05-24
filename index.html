@@ -447,6 +447,12 @@ window.unirse = function() {
             // La sala existe: Entramos directamente
             procederConUnion(nombreSala);
             
+            // --- NUEVA LÍNEA: Escucha constante para tener 'jugadores' siempre actualizado ---
+            db.ref('salas/' + nombreSala + '/jugadores').on('value', (snap) => {
+                window.jugadores = snap.val();
+            });
+            // -----------------------------------------------------------------------------
+            
             // ACTIVACIÓN DE OFERTAS: Al entrar, empezamos a escuchar si alguien nos vende algo
             if (typeof escucharOfertas === 'function') {
                 escucharOfertas();
