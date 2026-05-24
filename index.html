@@ -664,34 +664,24 @@ function mostrarNotificacionMision(titulo) {
     modal.style.display = 'block';
 };
         
-   window.proponerVenta = function(pIdx) {
+  window.proponerVenta = function(pIdx) {
     let sel = document.getElementById('sel-' + pIdx);
     let input = document.getElementById('precio-' + pIdx);
     
-    // Verificación de seguridad
-    if (!sel || !input) {
-        console.error("Error: No se encontraron los elementos.");
-        return;
-    }
+    if (!sel || !input) return;
 
     let comprador = sel.value;
     let precio = parseInt(input.value);
 
-    // 2. Validación usando el diseño de tarjetas (sin divs anidados)
+    // Validación simplificada para evitar errores de renderizado
     if (isNaN(precio) || precio < 100 || precio > 999) {
         document.getElementById('modal-title').innerText = "¡Atención!";
-        
-        // Asignamos la clase directamente al contenedor que ya existe
-        let modalText = document.getElementById('modal-text');
-        modalText.className = "card-property"; 
-        modalText.innerHTML = '<p style="text-align: center; padding: 10px;">Por favor, ingresa un precio válido entre 100 y 999.</p>';
-        
-        document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="abrirIntercambio()">Volver</button>`;
+        document.getElementById('modal-text').innerHTML = '<div class="card-property"><p style="text-align: center; padding: 10px;">Por favor, ingresa un precio válido entre 100 y 999.</p></div>';
+        document.getElementById('modal-extra').innerHTML = '<button class="btn" onclick="abrirIntercambio()">Volver</button>';
         document.getElementById('modal').style.display = 'block';
         return;
     }
 
-    // 3. Lógica original intacta
     db.ref('salas/' + sala + '/ofertas').push({
         prop: pIdx, 
         de: miIdx, 
@@ -700,9 +690,44 @@ function mostrarNotificacionMision(titulo) {
     });
 
     log(nombres[miIdx] + " propuso vender " + mapa[pIdx].n + " a " + nombres[comprador] + " por $" + precio);
-    
-    // Cerramos el modal solo después de enviar
     document.getElementById('modal').style.display = 'none';
+};
+
+window.abrirIntercambio = function() {
+    db.ref('salas/' + sala).once('value', snap => {
+        if (!snap.exists()) return;
+        let data = snap.val();
+        let misProps = [];
+        
+        if(data.propiedades) {
+            Object.keys(data.propiedades).forEach(pIdx => {
+                if(data.propiedades[pIdx].owner === miIdx) misProps.push(pIdx);
+            });
+        }
+        
+        if (misProps.length === 0) {
+            document.getElementById('modal-title').innerText = "¡Atención!";
+            document.getElementById('modal-text').innerHTML = '<div class="card-property"><p style="text-align: center; padding: 10px;">No tienes propiedades disponibles para vender.</p></div>';
+            document.getElementById('modal-extra').innerHTML = "";
+            document.getElementById('modal').style.display = 'block';
+            return;
+        }
+        
+        document.getElementById('modal-title').innerText = "Revender Propiedad";
+        let html = '<div class="card-property">Selecciona propiedad, precio (100-999) y comprador:<br><br>';
+        
+        misProps.forEach(pIdx => {
+            let p = mapa[pIdx];
+            html += `<b>${p.n}</b>:<br><input type="number" id="precio-${pIdx}" min="100" max="999" style="width: 80px;"> <select id="sel-${pIdx}">`;
+            data.jugadores.forEach((j, i) => { if(i !== miIdx) html += `<option value="${i}">${nombres[i]}</option>`; });
+            html += `</select> <button class="btn" onclick="proponerVenta(${pIdx})">Vender</button><br><br>`;
+        });
+        
+        html += '</div>';
+        document.getElementById('modal-text').innerHTML = html;
+        document.getElementById('modal-extra').innerHTML = "";
+        document.getElementById('modal').style.display = 'block';
+    });
 };
         
 
