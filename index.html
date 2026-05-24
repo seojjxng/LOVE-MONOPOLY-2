@@ -276,7 +276,8 @@ function pagarPenalidad() {
     cerrarModal();
 }
     
-    window.unirse = function() {
+   // 1. Función unirse (Detecta si existe o si debe crearla)
+window.unirse = function() {
     let inputSala = document.getElementById('sala-id');
     if (!inputSala || !inputSala.value) {
         alert("Por favor, ingresa un ID de sala.");
@@ -285,28 +286,41 @@ function pagarPenalidad() {
     
     let nombreSala = inputSala.value.trim();
 
-    // 1. VERIFICACIÓN: ¿La sala existe?
     db.ref('salas/' + nombreSala).once('value', snap => {
         if (!snap.exists()) {
-            // Si no existe, mostramos el modal CSS que querías
-            document.getElementById('modal-title').innerText = "¡Atención!";
+            // La sala no existe: Abrimos modal para ofrecer crearla
+            document.getElementById('modal-title').innerText = "Sala no encontrada";
             document.getElementById('modal-text').innerHTML = `
                 <div class="card-property">
                     <p style="text-align: center; padding: 20px;">
-                        La sala <b>${nombreSala}</b> no existe. Por favor, verifica el nombre o crea una nueva.
+                        La sala <b>${nombreSala}</b> no existe. ¿Quieres crear una nueva con este nombre?
                     </p>
                 </div>
             `;
-            document.getElementById('modal-extra').innerHTML = "";
+            document.getElementById('modal-extra').innerHTML = `
+                <button class="btn" onclick="crearNuevaSala('${nombreSala}')">Crear Sala</button>
+                <button class="btn" onclick="document.getElementById('modal').style.display='none'">Cancelar</button>
+            `;
             document.getElementById('modal').style.display = 'block';
-            return;
+        } else {
+            // La sala existe: Entramos directamente
+            procederConUnion(nombreSala);
         }
+    });
+};
 
-        // SI EXISTE, continuamos con tu lógica original de unirse
+// 2. Función auxiliar para crear y entrar
+window.crearNuevaSala = function(nombreSala) {
+    db.ref('salas/' + nombreSala).set({
+        estado: 'esperando',
+        jugadores: []
+    }).then(() => {
+        document.getElementById('modal').style.display = 'none';
         procederConUnion(nombreSala);
     });
 };
 
+// 3. Función principal de unión (con reconexión)
 function procederConUnion(nombreSala) {
     sala = nombreSala;
     if (yaEntro) return;
@@ -328,12 +342,11 @@ function procederConUnion(nombreSala) {
             tienePrestamo: false,
             montoPrestamo: 0
         }).then(() => {
-            // --- AQUÍ GUARDAMOS PARA LA RECONEXIÓN ---
+            // Guardamos para reconexión automática
             localStorage.setItem('monopoly_sala', sala);
-            // ------------------------------------------
+            
             jugadorRef.onDisconnect().remove();
             
-            // Log de abandono
             db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: miNombre + " ha abandonado." }).then(ref => {
                 ref.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
             });
@@ -356,6 +369,15 @@ function procederConUnion(nombreSala) {
         });
     });
 }
+
+// 4. BLOQUE DE RECONEXIÓN AUTOMÁTICA (Pon esto al final de tu archivo)
+window.addEventListener('load', () => {
+    let salaGuardada = localStorage.getItem('monopoly_sala');
+    if (salaGuardada && !yaEntro) {
+        console.log("Recuperando sesión en sala:", salaGuardada);
+        procederConUnion(salaGuardada);
+    }
+});
 
         function obtenerAlquilerFerrocarril(dueñoIdx, todasLasPropiedades) {
     const indicesTransporte = [8, 24, 26, 27];
