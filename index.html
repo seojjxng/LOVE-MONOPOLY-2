@@ -660,17 +660,22 @@ function mostrarNotificacionMision(titulo) {
     document.getElementById('modal').style.display = 'none';
 }
 
-    function escucharOfertas() {
-        db.ref('salas/' + sala + '/ofertas').on('child_added', snap => {
-            let o = snap.val();
-            if(o.para == miIdx) {
-                document.getElementById('modal-title').innerText = "¡Oferta de compra!";
-                document.getElementById('modal-text').innerText = nombres[o.de] + " quiere venderte " + mapa[o.prop].n + " por $" + o.precio;
-                document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="confirmarCompra('${snap.key}')">Aceptar</button>`;
-                document.getElementById('modal').style.display = 'block';
-            }
-        });
-    }
+    window.escucharOfertas = function() {
+    db.ref('salas/' + sala + '/ofertas').on('child_added', snap => {
+        let o = snap.val();
+        if(o.para == miIdx) {
+            document.getElementById('modal-title').innerText = "¡Oferta de compra!";
+            // Usamos tu estilo consistente de tarjeta
+            document.getElementById('modal-text').innerHTML = `
+                <div class="card-property">
+                    <p style="text-align: center;">${nombres[o.de]} quiere venderte <b>${mapa[o.prop].n}</b> por <b>$${o.precio}</b></p>
+                </div>
+            `;
+            document.getElementById('modal-extra').innerHTML = `<button class="btn" onclick="confirmarCompra('${snap.key}')">Aceptar</button>`;
+            document.getElementById('modal').style.display = 'block';
+        }
+    });
+}
 
     function confirmarCompra(oKey) {
         db.ref('salas/' + sala + '/ofertas/' + oKey).once('value', snap => {
