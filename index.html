@@ -276,48 +276,65 @@ function pagarPenalidad() {
     cerrarModal();
 }
     
-    function unirse() {
-    // 1. Obtener ID de sala desde el input
+    window.unirse = function() {
     let inputSala = document.getElementById('sala-id');
     if (!inputSala || !inputSala.value) {
         alert("Por favor, ingresa un ID de sala.");
         return;
     }
     
-    // Aseguramos que 'sala' sea una cadena limpia
-    sala = inputSala.value.trim();
+    let nombreSala = inputSala.value.trim();
 
+    // 1. VERIFICACIÓN: ¿La sala existe?
+    db.ref('salas/' + nombreSala).once('value', snap => {
+        if (!snap.exists()) {
+            // Si no existe, mostramos el modal CSS que querías
+            document.getElementById('modal-title').innerText = "¡Atención!";
+            document.getElementById('modal-text').innerHTML = `
+                <div class="card-property">
+                    <p style="text-align: center; padding: 20px;">
+                        La sala <b>${nombreSala}</b> no existe. Por favor, verifica el nombre o crea una nueva.
+                    </p>
+                </div>
+            `;
+            document.getElementById('modal-extra').innerHTML = "";
+            document.getElementById('modal').style.display = 'block';
+            return;
+        }
+
+        // SI EXISTE, continuamos con tu lógica original de unirse
+        procederConUnion(nombreSala);
+    });
+};
+
+function procederConUnion(nombreSala) {
+    sala = nombreSala;
     if (yaEntro) return;
     yaEntro = true;
     
     let btn = document.getElementById('btn-unirse');
     if (btn) btn.disabled = true;
 
-    // 2. Usamos .transaction o .once para asegurar que el índice sea único
     db.ref('salas/' + sala + '/jugadores').once('value', snap => {
         miIdx = snap.numChildren();
-        
-        // Proteccion: Si no existe el nombre, usamos "Jugador " + miIdx
         let miNombre = (typeof nombres !== 'undefined' && nombres[miIdx]) ? nombres[miIdx] : ("Jugador " + (miIdx + 1));
-        
         let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
         
-        // 3. Crear el jugador
         jugadorRef.set({
             pos: 0,
             dinero: 1000,
             enCarcel: 0,
-            nombre: miNombre, // Es mejor guardar el nombre en Firebase
+            nombre: miNombre,
             tienePrestamo: false,
             montoPrestamo: 0
         }).then(() => {
-            // 4. Configurar eventos de desconexión
             jugadorRef.onDisconnect().remove();
             
-            let mensajeRef = db.ref('salas/' + sala + '/chat').push(); 
-mensajeRef.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " ha abandonado." });
+            // Log de abandono
+            db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: miNombre + " ha abandonado." }).then(ref => {
+                ref.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
+            });
 
-            // 5. Lógica de inicio de sala
             if (miIdx === 0) {
                 db.ref('salas/' + sala + '/turno').set(0);
                 if (typeof iniciarRelojClima === 'function') iniciarRelojClima();
@@ -328,7 +345,6 @@ mensajeRef.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " ha abandonad
                 m: miNombre + " ha entrado a la sala."
             });
 
-            // 6. Iniciar sincronización
             sincronizar();
         }).catch(error => {
             console.error("Error al unirse a la sala:", error);
@@ -337,7 +353,6 @@ mensajeRef.onDisconnect().set({ n: "Sistema", m: nombres[miIdx] + " ha abandonad
         });
     });
 }
-
 
         function obtenerAlquilerFerrocarril(dueñoIdx, todasLasPropiedades) {
     const indicesTransporte = [8, 24, 26, 27];
