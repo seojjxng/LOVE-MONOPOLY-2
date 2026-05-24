@@ -329,24 +329,46 @@
     function log(txt) { db.ref('salas/' + sala + '/log').push(txt); }
 
         window.abrirInfoReputacion = function() {
-    // Usamos el índice del jugador (miIdx) que ya usas en otras funciones
+    // 1. Verificación de seguridad para evitar que el juego se bloquee
+    if (typeof jugadores === 'undefined' || !jugadores || !jugadores[miIdx]) {
+        console.warn("Información de jugadores no disponible todavía.");
+        alert("Cargando datos de jugador... espera un momento.");
+        return;
+    }
+
+    // 2. Obtener reputación con valor por defecto de 50
     let rep = jugadores[miIdx].reputacion || 50; 
     let estrellas = "";
     let descripcion = "";
 
-    if (rep >= 90) { estrellas = "★★★★★"; descripcion = "Hotel de Lujo. Tus propiedades son un éxito absoluto. Alquileres +10%."; }
-    else if (rep >= 70) { estrellas = "★★★★☆"; descripcion = "Muy valorado. Los visitantes están encantados."; }
-    else if (rep >= 50) { estrellas = "★★★☆☆"; descripcion = "Estándar. Todo funciona correctamente."; }
-    else if (rep >= 30) { estrellas = "★★☆☆☆"; descripcion = "Necesitas mantenimiento. Los clientes se quejan."; }
-    else { estrellas = "★☆☆☆☆"; descripcion = "Reputación crítica. Se esparcen rumores negativos. Alquileres reducidos."; }
+    // 3. Lógica de estrellas
+    if (rep >= 90) { 
+        estrellas = "★★★★★"; 
+        descripcion = "Hotel de Lujo. Tus propiedades son un éxito absoluto. ¡Alquileres +10%!"; 
+    } else if (rep >= 70) { 
+        estrellas = "★★★★☆"; 
+        descripcion = "Muy valorado. Los visitantes están encantados con tu gestión."; 
+    } else if (rep >= 50) { 
+        estrellas = "★★★☆☆"; 
+        descripcion = "Estándar. Todo funciona correctamente, pero puedes mejorar."; 
+    } else if (rep >= 30) { 
+        estrellas = "★★☆☆☆"; 
+        descripcion = "Necesitas mantenimiento. Los clientes han dejado quejas recientes."; 
+    } else { 
+        estrellas = "★☆☆☆☆"; 
+        descripcion = "Reputación crítica. Se esparcen rumores negativos. ¡Tus alquileres están bajando!"; 
+    }
 
+    // 4. Mostrar en el modal
     document.getElementById('modal-title').innerText = "Reseña de Visitantes";
     document.getElementById('modal-text').innerHTML = `
-        <div style="font-size: 30px; color: gold; margin-bottom: 10px;">${estrellas}</div>
-        <p>${descripcion}</p>
-        <hr>
-        <p style="font-size: 12px; color: #888;">Tu puntaje actual: <b>${rep}/100</b></p>
+        <div style="font-size: 40px; color: #ffd700; margin: 10px 0; text-shadow: 1px 1px 2px #555;">${estrellas}</div>
+        <p style="font-size: 16px; color: #c71585; font-weight: bold;">${descripcion}</p>
+        <hr style="border: 0; border-top: 1px solid #ffccd5; margin: 15px 0;">
+        <p style="font-size: 13px; color: #ff59aa;">Tu puntaje actual: <b>${rep}/100</b></p>
     `;
+    
+    // 5. Asegurar visibilidad
     document.getElementById('modal').style.display = 'block';
 };
 
