@@ -792,6 +792,38 @@ function mostrarNotificacionMision(titulo) {
     verPropiedad(pos, true);
 }
 
+        function pagarFianza() {
+        db.ref('salas/'+sala+'/jugadores/'+miIdx).update({enCarcel: 0, dinero: firebase.database.ServerValue.increment(-100)});
+        log(nombres[miIdx] + " pagó la fianza.");
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    function quedarseEnCarcel() {
+        log(nombres[miIdx] + " cumplirá su condena en la cárcel.");
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    function pasarTurno() {
+        turnosSeis = 0;
+        db.ref('salas/'+sala+'/jugadores').once('value', snap => {
+            let total = snap.numChildren();
+            db.ref('salas/'+sala+'/turno').once('value', tSnap => {
+                let t = Number(tSnap.val());
+                let nuevoTurno = (t + 1) % total;
+                db.ref('salas/'+sala+'/jugadores/'+nuevoTurno).once('value', jSnap => {
+                    let jugador = jSnap.val();
+                    if(jugador.enCarcel > 0) {
+                        log(nombres[nuevoTurno] + " está en la cárcel.");
+                        db.ref('salas/'+sala+'/jugadores/'+nuevoTurno).update({ enCarcel: jugador.enCarcel - 1 });
+                        db.ref('salas/'+sala+'/turno').set((nuevoTurno + 1) % total);
+                    } else {
+                        db.ref('salas/'+sala+'/turno').set(nuevoTurno);
+                    }
+                });
+            });
+        });
+    }
+
        window.verPropiedad = function(pos, esCaida = false) {
     let modal = document.getElementById('modal');
     let modalText = document.getElementById('modal-text');
