@@ -34,6 +34,14 @@
         .house { width: 8px; height: 8px; background: #ff59aa; }
         .hotel { width: 20px; height: 8px; background: #c71585; }
         .token { width: 25px; height: 25px; position: absolute; z-index: 10; transition: all 0.5s ease; pointer-events: none; }
+        .scroll-invisible {
+    max-height: 350px; /* Limita la altura para que no crezca infinito */
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+}
+.scroll-invisible::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+}
         #modal-misiones { 
     display: none; 
     position: fixed; 
@@ -663,8 +671,8 @@ function mostrarNotificacionMision(titulo) {
         
         document.getElementById('modal-title').innerText = "Revender Propiedad";
         
-        // Usamos un contenedor que siga el estilo de tus tarjetas
-        let html = `<div class="card-property">`;
+        // Aplicamos la clase 'scroll-invisible' al contenedor principal del contenido
+        let html = `<div class="card-property scroll-invisible" style="text-align: left;">`;
         html += "Selecciona propiedad, precio (mayor a 250) y comprador:<br><br>";
         
         if(misProps.length === 0) { 
@@ -672,7 +680,7 @@ function mostrarNotificacionMision(titulo) {
         } else {
             misProps.forEach(pIdx => {
                 let p = mapa[pIdx];
-                html += `<b>${p.n}</b>: 
+                html += `<b>${p.n}</b>:<br>
                          <input type="number" id="precio-${pIdx}" placeholder="251" min="251" max="999" style="width: 60px;"> 
                          <select id="sel-${pIdx}">`;
                 
@@ -688,8 +696,8 @@ function mostrarNotificacionMision(titulo) {
         document.getElementById('modal-text').innerHTML = html;
         document.getElementById('modal').style.display = 'block';
     });
-}
-
+};
+        
    window.mostrarAvisoIntercambio = function() {
     let modal = document.getElementById('modal');
     let modalTitle = document.getElementById('modal-title');
