@@ -677,44 +677,54 @@ function mostrarNotificacionMision(titulo) {
     });
 }
 
-    function confirmarCompra(oKey) {
-        db.ref('salas/' + sala + '/ofertas/' + oKey).once('value', snap => {
-            let o = snap.val();
-            db.ref('salas/' + sala + '/jugadores').transaction(j => {
-                if(j[miIdx].dinero >= o.precio) {
-                    j[miIdx].dinero -= o.precio;
-                    j[o.de].dinero += o.precio;
-                    return j;
-                }
-                return;
-            });
+    window.confirmarCompra = function(oKey) {
+    db.ref('salas/' + sala + '/ofertas/' + oKey).once('value', snap => {
+        let o = snap.val();
+        if (!o) return;
 
+        // Inicia la transacción para el dinero
+        db.ref('salas/' + sala + '/jugadores').transaction(j => {
+            if (j && j[miIdx] && j[o.de] && j[miIdx].dinero >= o.precio) {
+                j[miIdx].dinero -= o.precio;
+                j[o.de].dinero += o.precio;
+                return j;
+            }
+            return; // Si no hay dinero o los datos fallan, aborta
+        }, (error, committed) => {
+            if (error) {
+                console.error("Error en la transacción: ", error);
+                alert("Hubo un problema al procesar el pago.");
+            } else if (committed) {
+                // 1. Misiones
+                verificarMisionInversor(miIdx);
+                verificarMisionColeccionista(miIdx);
+                verificarMisionMonopolioTotal(miIdx);
+                verificarMisionRenovador(miIdx);
+                verificarMisionNegociador(o.de);
 
-           // 1. Misiones de Propiedades
-        verificarMisionInversor(miIdx);
-        verificarMisionColeccionista(miIdx);
-        verificarMisionMonopolioTotal(miIdx);
-        verificarMisionRenovador(miIdx);
+                db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').once('value', s => {
+                    verificarMisionCajaFuerte(miIdx, s.val());
+                });
 
-            // 2. Misión de Efectivo
-        // Al recibir una propiedad, el dinero de miIdx cambió (o el del vendedor), 
-        // por lo que verificamos si alcanzó el límite.
-        db.ref('salas/' + sala + '/jugadores/' + miIdx + '/dinero').once('value', s => {
-            verificarMisionCajaFuerte(miIdx, s.val());
+                // 2. Acciones finales
+                db.ref('salas/' + sala + '/propiedades/' + o.prop).update({
+                    owner: miIdx, 
+                    hipotecada: false
+                });
+                
+                log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
+                
+                // 3. Borrar oferta y cerrar modal de forma segura
+                db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
+                
+                let modal = document.getElementById('modal');
+                if (modal) modal.style.display = 'none';
+            } else {
+                alert("No tienes suficiente dinero para completar esta compra.");
+            }
         });
-
-        // 3. Misión de Interacción (Negociador)
-        // Usamos o.de, que es donde guardaste el ID del vendedor al crear la oferta
-        let vendedorIdx = o.de; 
-        verificarMisionNegociador(vendedorIdx);
-        
-            
-            db.ref('salas/' + sala + '/propiedades/' + o.prop).update({owner: miIdx, hipotecada: false});
-            log(nombres[miIdx] + " compró " + mapa[o.prop].n + " a " + nombres[o.de]);
-            db.ref('salas/' + sala + '/ofertas/' + oKey).remove();
-            document.getElementById('modal').style.display = 'none';
-        });
-    }
+    });
+};
         
 
     function hipotecar(pos) { db.ref('salas/'+sala+'/propiedades/'+pos).update({hipotecada: true}); db.ref('salas/'+sala+'/jugadores/'+miIdx+'/dinero').transaction(d => d + Math.floor(mapa[pos].p/2)); log(nombres[miIdx] + " hipotecó " + mapa[pos].n); document.getElementById('modal').style.display = 'none'; }
