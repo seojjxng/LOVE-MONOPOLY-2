@@ -792,25 +792,33 @@ function mostrarNotificacionMision(titulo) {
     verPropiedad(pos, true);
 }
 
-       function verPropiedad(pos, esCaida = false) {
+       window.verPropiedad = function(pos, esCaida = false) {
+    let modal = document.getElementById('modal');
+    let modalText = document.getElementById('modal-text');
+    let modalExtra = document.getElementById('modal-extra');
+    let modalTitle = document.getElementById('modal-title');
+
+    // Validación de seguridad para evitar que la función se rompa
+    if (!modal || !modalText || !mapa[pos]) return;
+
     let p = mapa[pos];
-    if (p.p === 0) return;
+    
+    // Si la casilla no tiene precio, mostramos información básica y salimos
+    if (p.p === 0) {
+        modalTitle.innerText = p.n;
+        modalText.innerHTML = "Casilla especial: " + p.n;
+        modal.style.display = 'block';
+        return;
+    }
     
     let g = obtenerGrupo(pos);
     let esFerrocarril = (g && g.color === "#f5f5dc");
-    
-    // Mapeo de iconos
     let iconos = { 8: "https://i.imgur.com/24NquXH.png", 24: "https://i.imgur.com/QMFz9pn.png", 26: "https://i.imgur.com/AINz8Jt.png", 27: "https://i.imgur.com/ZaN9ZUG.png" };
     
-    // Filtro exacto para convertir negro a #ff80bf
-    // Si tus iconos originales son negros, este filtro es perfecto.
-    let filtroRosa = "filter: invert(66%) sepia(21%) saturate(2335%) hue-rotate(293deg) brightness(105%) contrast(101%);";
-    
-    let extra = document.getElementById('modal-extra'); 
-    extra.innerHTML = "";
+    modalExtra.innerHTML = "";
     
     db.ref('salas/' + sala).once('value', snap => {
-        let data = snap.val();
+        let data = snap.val() || {};
         let prop = data.propiedades ? data.propiedades[pos] : null;
         
         let multClima = data.clima !== undefined ? climas[data.clima].mult : 1.0;
@@ -826,70 +834,53 @@ function mostrarNotificacionMision(titulo) {
             listaAlquileres += `<li>${nivelesNombres[i]}: $${precioNormal}${notaClima}</li>`;
         });
         
-        document.getElementById('modal-title').innerText = "Tarjeta de Propiedad";
+        modalTitle.innerText = "Tarjeta de Propiedad";
         
-        let htmlCard = `<div class="card-property">
-            <div class="card-header">${p.n}</div>`;
+        let htmlCard = `<div class="card-property"><div class="card-header">${p.n}</div>`;
             
-        // Aplicando el filtro al icono
         if (esFerrocarril && iconos[pos]) {
             htmlCard += `<div style="width: 80px; height: 80px; margin: 30px auto 10px auto; background-color: #ff80bf; -webkit-mask: url('${iconos[pos]}') no-repeat center / contain; mask: url('${iconos[pos]}') no-repeat center / contain;"></div>`;
         }
             
-        if (esFerrocarril) {
-            htmlCard += `<p>Valor de compra: <b>$600</b></p>`;
-        } else {
-            htmlCard += `<p>Valor de compra: <b>$${p.p}</b></p>`;
-        }
+        htmlCard += `<p>Valor de compra: <b>$${esFerrocarril ? 600 : p.p}</b></p>`;
 
-        // --- LÓGICA DE PROPIEDAD ---
         if (!prop) {
             htmlCard += `<p>Estado: <b>Disponible</b></p>`;
             if(esCaida) {
                 let precioCompra = esFerrocarril ? 600 : p.p;
-                extra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar ($${precioCompra})</button>`;
+                modalExtra.innerHTML = `<button class="btn" onclick="comprar(${pos})">Comprar ($${precioCompra})</button>`;
             }
         } else if (prop.owner === miIdx) {
             htmlCard += `<p>Dueño: <b>Tú</b></p>`;
             if (!esFerrocarril) htmlCard += `<p>Nivel: <b>${nivelesNombres[prop.nivel || 0]}</b></p>`;
-            
             if (!prop.hipotecada) {
-                if (!esFerrocarril && prop.nivel < 5) extra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
-                extra.innerHTML += `<button class="btn" style="background: #ad0c0c;" onclick="hipotecar(${pos})">Hipotecar</button>`;
+                if (!esFerrocarril && prop.nivel < 5) modalExtra.innerHTML += `<button class="btn" onclick="mejorar(${pos})">Mejorar ($50)</button>`;
+                modalExtra.innerHTML += `<button class="btn" style="background: #ad0c0c;" onclick="hipotecar(${pos})">Hipotecar</button>`;
             } else {
-                extra.innerHTML += `<button class="btn" onclick="liberar(${pos})">Liberar</button>`;
+                modalExtra.innerHTML += `<button class="btn" onclick="liberar(${pos})">Liberar</button>`;
             }
         } else {
             htmlCard += `<p>Dueño: <b>${nombres[prop.owner]}</b></p>`;
             let alqFinal = 0;
-            
             if (esFerrocarril) {
                 let transportes = [8, 24, 26, 27];
-                let count = transportes.filter(idx => data.propiedades[idx] && data.propiedades[idx].owner === prop.owner).length;
+                let count = transportes.filter(idx => data.propiedades && data.propiedades[idx] && data.propiedades[idx].owner === prop.owner).length;
                 let tabla = { 1: 200, 2: 250, 3: 350, 4: 450 };
                 alqFinal = tabla[count] || 200;
             } else {
                 alqFinal = Math.floor(p.p * porcentajes[prop.nivel || 0] * multClima);
             }
-            
             htmlCard += `<p>Alquiler a pagar: <b>$${alqFinal}</b></p>`;
             if(esCaida && !prop.hipotecada) {
-                extra.innerHTML = `<button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alqFinal})">Pagar Alquiler</button>`;
+                modalExtra.innerHTML = `<button class="btn" onclick="procesarPago(${miIdx}, ${prop.owner}, ${alqFinal})">Pagar Alquiler</button>`;
             }
         }
         
-        // --- TABLA DE PRECIOS ---
         htmlCard += `<hr><p style="font-size: 11px;"><b>${esFerrocarril ? "Alquiler según transportes:" : "Precios de Alquiler ("+nombreClima+"): "}</b></p>
-                     <ul style="font-size: 11px; padding-left: 20px;">`;
+                     <ul style="font-size: 11px; padding-left: 20px;">${esFerrocarril ? "<li>Si se poseen: $200</li><li>Si se poseen: $250</li><li>Si se poseen: $350</li><li>Si se poseen: $450</li>" : listaAlquileres}</ul></div>`;
         
-        if (esFerrocarril) {
-            htmlCard += `<li>Si se poseen: $200</li><li>Si se poseen: $250</li><li>Si se poseen: $350</li><li>Si se poseen: $450</li>`;
-        } else {
-            htmlCard += listaAlquileres;
-        }
-        
-        document.getElementById('modal-text').innerHTML = htmlCard + "</ul></div>";
-        document.getElementById('modal').style.display = 'block';
+        modalText.innerHTML = htmlCard;
+        modal.style.display = 'block';
     });
 }
     function ejecutarEvento(nombreCasilla) {
