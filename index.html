@@ -55,6 +55,8 @@
     top: -30px; /* Para subirlo más (-15px, -20px, etc.) */
 }
 .close:hover { color: #ff59aa; }
+.reputacion-container { width: 100px; height: 10px; background: #ddd; border-radius: 5px; }
+.reputacion-bar { height: 100%; width: 50%; background: #00ff00; border-radius: 5px; transition: width 0.5s; }
         #modal-misiones { 
     display: none; 
     position: fixed; 
@@ -152,6 +154,9 @@
         <div id="modal-text" class="modal-content-scroll"></div>
         <div id="modal-extra"></div>
     </div>
+</div>
+            <div class="reputacion-container">
+    <div id="rep-bar" class="reputacion-bar"></div>
 </div>
             <div class="center-zone">
                 <div id="clima-display" style="font-size: 15px; color: #ff59aa; font-weight: bold;">Clima: -</div>
@@ -287,6 +292,16 @@
     function obtenerCarta() { return cartasEvento[Math.floor(Math.random() * cartasEvento.length)]; }
     function cerrarModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('modal-extra').innerHTML = ""; }
     function log(txt) { db.ref('salas/' + sala + '/log').push(txt); }
+
+        function calcularAlquiler(precioBase, duenoIdx) {
+    let rep = jugadores[duenoIdx].reputacion; // Supongamos que guardas la rep aquí
+    let multiplicador = 1.0; 
+
+    if (rep > 80) multiplicador = 1.10;      // Bonus: +10%
+    else if (rep < 30) multiplicador = 0.85; // Rumores: -15%
+
+    return Math.floor(precioBase * multiplicador);
+}
 
         function gestionarFraude() {
     let extra = document.getElementById('modal-extra');
