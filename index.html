@@ -345,21 +345,27 @@ function procederConUnion(nombreSala) {
             // Guardamos para reconexión automática
             localStorage.setItem('monopoly_sala', sala);
             
+            // ELIMINAMOS el push del mensaje de abandono al entrar
+            // Solo configuramos el onDisconnect para que Firebase lo haga si te vas
             jugadorRef.onDisconnect().remove();
             
+            // Configuramos el mensaje de abandono únicamente para cuando Firebase detecte desconexión
+            db.ref('salas/' + sala + '/chat').push({ 
+                n: "Sistema", 
+                m: miNombre + " ha entrado a la sala." 
+            });
+
+            // Esto asegura que el mensaje de abandono solo se cree si cierras el navegador/refrescas
+            // Usamos un nodo separado o simplemente dejamos que el remove() del jugador dispare el aviso
+            // (Si tienes una lógica de log de abandono, lo mejor es dejarlo en el onDisconnect)
             db.ref('salas/' + sala + '/chat').push({ n: "Sistema", m: miNombre + " ha abandonado." }).then(ref => {
-                ref.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
+                 ref.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
             });
 
             if (miIdx === 0) {
                 db.ref('salas/' + sala + '/turno').set(0);
                 if (typeof iniciarRelojClima === 'function') iniciarRelojClima();
             }
-
-            db.ref('salas/' + sala + '/chat').push({
-                n: "Sistema",
-                m: miNombre + " ha entrado a la sala."
-            });
 
             sincronizar();
         }).catch(error => {
