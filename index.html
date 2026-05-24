@@ -1154,6 +1154,10 @@ window.abrirIntercambio = function() {
     input.value = ""; // Limpiar input
 }
     window.sincronizar = function() {
+    // PROTECCIÓN: Si no hay sala definida, no hacemos nada.
+    // Esto evita que se disparen eventos de Firebase en el Lobby.
+    if (typeof sala === 'undefined' || !sala) return;
+
     escucharOfertas();
     
     // 1. Sincronización del Chat
@@ -1180,14 +1184,13 @@ window.abrirIntercambio = function() {
         }
 
         // --- CORRECCIÓN DE TURNOS ---
-        // Verificamos que el turno exista antes de intentar mostrarlo
         let turnoText = document.getElementById('turno-text');
-        if (turnoText && s.turno !== undefined && nombres) {
+        if (turnoText && s.turno !== undefined && typeof nombres !== 'undefined') {
             turnoText.innerText = "Turno: " + (nombres[s.turno] || "Jugador " + (s.turno + 1));
         }
 
         // Actualizar Clima
-        if(s.clima !== undefined) { 
+        if(s.clima !== undefined && typeof climas !== 'undefined') { 
             let c = climas[s.clima]; 
             document.getElementById('clima-display').innerText = "Estación: " + c.n; 
         }
@@ -1231,12 +1234,14 @@ window.abrirIntercambio = function() {
         // Actualizar Log
         if(s.log) { 
             let h = ""; Object.values(s.log).forEach(l => h += l + "<br>"); 
-            document.getElementById('log').innerHTML = h; 
+            let logEl = document.getElementById('log');
+            if(logEl) logEl.innerHTML = h; 
         }
 
-        // Misiones (Mantenemos tu lógica existente)
+        // Misiones
         if (s.jugadores && s.jugadores[miIdx]) {
-            verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
+            if (typeof verificarMisionCajaFuerte === 'function') verificarMisionCajaFuerte(miIdx, s.jugadores[miIdx].dinero);
+            
             if (s.jugadores[miIdx].ultimaMision) {
                 let m = s.jugadores[miIdx].ultimaMision;
                 const mensajes = {
@@ -1249,26 +1254,29 @@ window.abrirIntercambio = function() {
                     "monopolioTotal": "¡INCREÍBLE! Has conseguido el Monopolio Total. ¡Premio de $1,500!"
                 };
                 if (mensajes[m]) {
-                    mostrarNotificacionMision(mensajes[m]);
+                    if (typeof mostrarNotificacionMision === 'function') mostrarNotificacionMision(mensajes[m]);
                     db.ref('salas/' + sala + '/jugadores/' + miIdx + '/ultimaMision').remove();
                 }
             }
         }
     });
-}
-
+};
         
     // 1. EL BLOQUE DE RECONEXIÓN (Fuera de todo)
+// BLOQUE DE RECONEXIÓN: Solo rellena el input, NO entra automáticamente
 window.addEventListener('load', () => {
     let salaGuardada = localStorage.getItem('monopoly_sala');
-    if (salaGuardada && !yaEntro) {
-        console.log("Detectada reconexión a la sala:", salaGuardada);
+    
+    // Solo rellenamos el input si el usuario tenía una sala guardada
+    // Pero NO llamamos a procederConUnion(), para que se quede en el Lobby
+    if (salaGuardada) {
         let input = document.getElementById('sala-id');
-        if (input) input.value = salaGuardada;
-        procederConUnion(salaGuardada);
+        if (input) {
+            input.value = salaGuardada;
+            console.log("Sesión detectada, sala rellenada en el campo de texto. Esperando acción del usuario.");
+        }
     }
 });
-
 // 2. EL BLOQUE DE CREACIÓN DEL TABLERO
 window.addEventListener('DOMContentLoaded', () => {
     const board = document.getElementById('board');
