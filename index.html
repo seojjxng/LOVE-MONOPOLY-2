@@ -328,6 +328,9 @@ function procederConUnion(nombreSala) {
             tienePrestamo: false,
             montoPrestamo: 0
         }).then(() => {
+            // --- AQUÍ GUARDAMOS PARA LA RECONEXIÓN ---
+            localStorage.setItem('monopoly_sala', sala);
+            // ------------------------------------------
             jugadorRef.onDisconnect().remove();
             
             // Log de abandono
@@ -1231,8 +1234,21 @@ window.abrirIntercambio = function() {
         }
     });
 }
-     
-    window.addEventListener('DOMContentLoaded', () => {
+
+        
+    // 1. EL BLOQUE DE RECONEXIÓN (Fuera de todo)
+window.addEventListener('load', () => {
+    let salaGuardada = localStorage.getItem('monopoly_sala');
+    if (salaGuardada && !yaEntro) {
+        console.log("Detectada reconexión a la sala:", salaGuardada);
+        let input = document.getElementById('sala-id');
+        if (input) input.value = salaGuardada;
+        procederConUnion(salaGuardada);
+    }
+});
+
+// 2. EL BLOQUE DE CREACIÓN DEL TABLERO
+window.addEventListener('DOMContentLoaded', () => {
     const board = document.getElementById('board');
     if (!board) return;
 
@@ -1244,7 +1260,6 @@ window.abrirIntercambio = function() {
         
         let g = obtenerGrupo(i);
         
-        // Estilo según grupo
         if (g && g.color === "#f5f5dc") {
             d.style.border = "3px solid #f5f5dc"; 
             d.style.backgroundColor = "#fffef0";
@@ -1252,7 +1267,6 @@ window.abrirIntercambio = function() {
             d.innerHTML = `<div class="strip" style="background: ${g.color}"></div>`;
         }
         
-        // Agregar texto
         d.innerHTML += `<div class="contenido" style="font-size: 7px; color: #c71585;">
                             ${m.n}<br>
                             ${m.p > 0 ? '$' + m.p : ''}
