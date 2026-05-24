@@ -231,10 +231,16 @@
                 Activar Modo 2v2
             </button>
         </div>
-    </div> </div> <div id="modal-2v2" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
-    <div style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
-        <p>El modo 2v2 requiere 4 jugadores.</p>
-        <button class="btn" onclick="document.getElementById('modal-2v2').style.display='none'">Aceptar</button>
+    </div> </div> <div id="modal-2v2" class="modal" style="display: none;">
+    <div class="modal-body">
+        <span class="close" onclick="document.getElementById('modal-2v2').style.display='none'">&times;</span>
+        <h2>Modo 2v2</h2>
+        <div class="modal-content-scroll">
+            <p>El modo 2v2 requiere 4 jugadores.</p>
+        </div>
+        <div id="modal-extra">
+            <button class="btn" onclick="document.getElementById('modal-2v2').style.display='none'">Aceptar</button>
+        </div>
     </div>
 </div>
 
@@ -1761,8 +1767,8 @@ window.addEventListener('load', () => {
     if (salaGuardada) {
         let input = document.getElementById('sala-id');
         if (input) {
-            input.value = salaGuardada;
-            console.log("Sesión detectada, sala rellenada en el campo de texto. Esperando acción del usuario.");
+            // input.value = salaGuardada; // <-- COMENTA ESTA LÍNEA
+            console.log("Sesión ignorada para empezar en blanco.");
         }
     }
 });
