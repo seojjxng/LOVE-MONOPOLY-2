@@ -289,6 +289,13 @@
     return grupos.find(g => g.indices && g.indices.includes(pos)) || null;
 }
 
+
+        function getColorEquipo(equipo) {
+    if (equipo === "A") return "#4a90e2"; // Azul para equipo A
+    if (equipo === "B") return "#e74c3c"; // Rojo para equipo B
+    return "#cccccc"; // Gris por defecto
+}
+        
         // Función que verifica si el equipo tiene el monopolio de un color
 function verificarMonopolioEquipo(pos, equipo, data) {
     let grupoColor = obtenerGrupo(pos).color;
@@ -554,6 +561,9 @@ function procederConUnion(nombreSala) {
         let miNombre = (typeof nombres !== 'undefined' && nombres[miIdx]) ? nombres[miIdx] : ("Jugador " + (miIdx + 1));
         let jugadorRef = db.ref('salas/' + sala + '/jugadores/' + miIdx);
         
+        // Asignación automática de equipo: 0=A, 1=B, 2=A, 3=B...
+        let equipoAsignado = (miIdx % 2 === 0) ? "A" : "B";
+        
         jugadorRef.set({
             pos: 0,
             dinero: 1000,
@@ -561,25 +571,19 @@ function procederConUnion(nombreSala) {
             nombre: miNombre,
             tienePrestamo: false,
             montoPrestamo: 0,
-            // --- NUEVAS PROPIEDADES PARA LOGROS ---
             escudo: false,
-            quiebraTecnica: 0
-            // --------------------------------------
+            quiebraTecnica: 0,
+            equipo: equipoAsignado // <-- ASIGNADO AQUÍ
         }).then(() => {
-            // Guardamos sala para reconexión
             localStorage.setItem('monopoly_sala', sala);
-            
-            // 1. Limpiamos jugador al desconectar
             jugadorRef.onDisconnect().remove();
             
-            // 2. CONFIGURAMOS EL MENSAJE DE ABANDONO
             let chatRef = db.ref('salas/' + sala + '/chat').push();
             chatRef.onDisconnect().set({ n: "Sistema", m: miNombre + " ha abandonado." });
             
-            // 3. ENVIAMOS MENSAJE DE ENTRADA
             db.ref('salas/' + sala + '/chat').push({ 
                 n: "Sistema", 
-                m: miNombre + " ha entrado a la sala." 
+                m: miNombre + " ha entrado a la sala (" + equipoAsignado + ")." 
             });
 
             if (miIdx === 0) {
@@ -595,7 +599,6 @@ function procederConUnion(nombreSala) {
         });
     });
 }
-
 
         function calcularAlquiler(precioBase, duenoIdx) {
     // 1. Obtener reputación del dueño para el cálculo del precio
