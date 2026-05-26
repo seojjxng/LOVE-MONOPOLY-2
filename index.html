@@ -69,10 +69,11 @@
     </div>
 </div>
 
-<script>
-    import { firebaseConfig } from './config.js';
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+    import { getDatabase } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+    import { firebaseConfig } from './firebase-config.js';
 
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
